@@ -20,10 +20,8 @@ Chip8::~Chip8(){ /* Emtpy */ }
  * Initialization function
  */
 void Chip8::initialize(){
-   display = { INDEX_OF_0 };
-   keys = { INDEX_OF_0 };
-   stack = { INDEX_OF_0 };
-   memory = { INDEX_OF_0 };
+   cout << "Entering initialize() ... " << endl;
+
    pc = PC_START_ADDR;
    opcode = INDEX_OF_0;
    I = INDEX_OF_0;
