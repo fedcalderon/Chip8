@@ -8,19 +8,56 @@
 #ifndef CHIP_INC_CHIP8_H_
 #define CHIP_INC_CHIP8_H_
 
-#define FONTSET_SIZE       80
-#define MEMORY_SIZE        0x1000   // 4096
-#define DISP_HOR           64
-#define DISP_VER           32
-#define NUM_KEYS           16
-#define REG_SIZE           16
-#define STACK_SIZE         16
+// Numeric constants
+#define FONTSET_SIZE         80
+#define MEMORY_SIZE          0x1000   // 4096
+#define DISP_HOR             64
+#define DISP_VER             32
+#define NUM_KEYS             16
+#define REG_SIZE             16
+#define STACK_SIZE           16
+#define APP_START_ADDR       0x200    // 512
 
-#define APP_START_ADDR     0x200    // 512
-#define INDEX_OF_0         0
-#define INDEX_OF_1         1
-#define INDEX_OF_2         2
+#define INDEX_OF_0           0x0000
+#define INDEX_OF_1           0x0001
+#define INDEX_OF_2           0x0002
+#define INDEX_OF_3           0x0003
+#define INDEX_OF_4           0x0004
+#define INDEX_OF_5           0x0005
+#define INDEX_OF_6           0x0006
+#define INDEX_OF_7           0x0007
+#define INDEX_OF_8           0x0008
+#define INDEX_OF_E           0x000E
 
+#define OPCODE_OUTER_MASK    0xF000
+#define OPCODE_INNER_MASK    0xF000
+
+// Outer opcode types
+#define TYPE_0               0x0000
+#define TYPE_1               0x1000
+#define TYPE_2               0x2000
+#define TYPE_3               0x3000
+#define TYPE_4               0x4000
+#define TYPE_5               0x5000
+#define TYPE_6               0x6000
+#define TYPE_7               0x7000
+#define TYPE_8               0x8000
+#define TYPE_9               0x9000
+#define TYPE_A               0xA000
+#define TYPE_B               0xB000
+#define TYPE_C               0xC000
+#define TYPE_D               0xD000
+#define TYPE_E               0xE000
+#define TYPE_F               0xF000
+
+// Inner opcode types
+#define TYPE_0NNN            0x0FFF
+#define TYPE_00NN            0x00FF
+#define TYPE_000N            0x000F
+#define CLEAR_SCREEN         0x00E0
+#define RTN_SUBROUTINE       0x00EE
+
+// Character constants
 #define READ_MODE          "r"
 #define TEST_APP           "C:\\Users\\fedcalderon\\workspace\\Chip8\\Apps\\tetris.c8"
 
@@ -78,9 +115,13 @@ class Chip8 {
        */
       bool loadApp(const char*);
       /*
+       * Run display method
+       */
+      void runDisplay();
+      /*
        * Run method
        */
-      void runEmulator();
+      bool runEmulator();
 
    private:
       /*
@@ -89,29 +130,29 @@ class Chip8 {
        * Fontset: 0x50
        * Programs: 0x200
        */
-      char memory[MEMORY_SIZE];
+      unsigned char memory[MEMORY_SIZE];
       /*
        * There are 16 8-bit registers named from V0 - VF.
        * Reg 0xF used for carry, borrow and collision detection.
        */
-      char V[REG_SIZE];
+      unsigned char V[REG_SIZE];
       /*
        * There are 16 levels of nesting for the subroutine callstack
        */
-      int stack[STACK_SIZE];
+      unsigned short stack[STACK_SIZE];
       /*
        * Program counter is 16 bit (12 are used).
        * PC points to the current operation.
        */
-      int pc;
+      unsigned short pc;
       /*
        * The index register, 16-bit register for memory address.
        */
-      int I;
+      unsigned short I;
       /*
        * The Opcode. There are 35 opcodes which are 2 bytes long and stored big-endian.
        */
-      int opcode;
+      unsigned short opcode;
       /*
        * The delay timer
        */
@@ -123,7 +164,7 @@ class Chip8 {
       /*
        * The Stack Pointer
        */
-      int stack_pointer;
+      unsigned short stack_pointer;
 };
 
 #endif /* CHIP_INC_CHIP8_H_ */

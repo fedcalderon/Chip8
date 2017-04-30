@@ -26,6 +26,8 @@ int main(int argc, char **argv){
 
    // Load the app
    chip8.loadApp(TEST_APP);
+   chip8.runDisplay();
+
 //   if(!chip8.loadApp(argv[INDEX_OF_1])){
 //      cout << "Error opening the application!" << endl;
 //      rtn = INDEX_OF_1;

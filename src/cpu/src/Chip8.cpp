@@ -15,6 +15,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+#include <iomanip>
+
 using namespace std;
 
 Chip8::Chip8(){ /* Emtpy */ }
@@ -26,7 +28,7 @@ Chip8::~Chip8(){ /* Emtpy */ }
 void Chip8::initializeChip8(){
    cout << "Entering initialize() ... " << endl;
 
-   pc = APP_START_ADDR;
+   pc = (char) APP_START_ADDR;
    opcode = INDEX_OF_0;
    I = INDEX_OF_0;
    stack_pointer = INDEX_OF_0;
@@ -94,8 +96,146 @@ bool Chip8::loadApp(const char *file){
 }
 
 /*
+ * Run display method
+ */
+void Chip8::runDisplay(){
+
+   while(runEmulator()){
+      // Draw to the screen
+      cout << "Drawing to the screen ... " << endl;
+   }
+}
+
+/*
 * Run emulator method
 */
-void Chip8::runEmulator(){
+bool Chip8::runEmulator(){
+   bool rtn = true;
+   /*
+    * Get the opcode. Opcode is 2 bytes long, therefore can obtain as follows:
+    *
+    * 1. Read first byte from memory[pc]
+    * 2. Shift 8 bits to the left
+    * 3. Read contiguous byte from memory[pc+1]
+    * 4. Bitwise OR both values to form opcode
+    */
+   unsigned short first_byte = memory[pc];
+   first_byte = first_byte << INDEX_OF_8;
+   unsigned short second_byte = memory[pc + INDEX_OF_1];
+   opcode = first_byte | second_byte;
 
+   cout << std::showbase << std::hex;
+   cout << "opcode = " << std::uppercase << opcode << endl;
+
+   /*
+    * Decode opcode.
+    * Per the spec, the most significant digit shows the type of operation and the
+    * remainder digits are to be parsed to know what to do. Obtain as follows:
+    *
+    * 1. In order to obtain the first digit, bitwise AND the opcode with 0xF000.
+    * 2. In a switch statement, jump based on first digit.
+    * 3. Once in a valid case, process the opcode.
+    */
+   unsigned short opcode_type = opcode & OPCODE_OUTER_MASK;
+
+   // Outer switch to control the types of opcodes
+   switch (opcode_type) {
+      case TYPE_0:  // Display and flow
+         // Inner switch to process internal options
+         unsigned short opcode_internal_type = opcode_type & OPCODE_INNER_MASK;
+         switch (opcode_internal_type) {
+            case CLEAR_SCREEN:   // 00E0: Clears the screen
+               break;
+            case RTN_SUBROUTINE: // 00EE: Returns from a subroutine.
+               break;
+            default:
+               break;
+         }
+         break;
+      case TYPE_1:               // Jumps to address NNN.
+               break;
+      case TYPE_2:               // Calls subroutine at NNN.
+               break;
+      case TYPE_3:               // Skips the next instruction if VX equals NN. (Usually the next instruction is a jump to skip a code block)
+               break;
+      case TYPE_4:               // Skips the next instruction if VX doesn't equal NN. (Usually the next instruction is a jump to skip a code block)
+               break;
+      case TYPE_5:               // Skips the next instruction if VX equals VY. (Usually the next instruction is a jump to skip a code block)
+               break;
+      case TYPE_6:               // Sets VX to NN.
+               break;
+      case TYPE_7:               // Adds NN to VX.
+               break;
+      case TYPE_8:               // Math operations
+         // Inner switch over last nibble to process internal options.
+         unsigned short last_nibble = opcode & TYPE_000N;
+         switch (last_nibble) {
+            case INDEX_OF_0:  // 8XY0: sets VX to the value of VY
+               break;
+            case INDEX_OF_1:  // 8XY1: Sets VX to VX or VY. (Bitwise OR operation) VF is reset to 0.
+               break;
+            case INDEX_OF_2:  // 8XY2: Sets VX to VX and VY. (Bitwise AND operation) VF is reset to 0.
+               break;
+            case INDEX_OF_3:  // 8XY3: Sets VX to VX xor VY. VF is reset to 0.
+               break;
+            case INDEX_OF_4:  // 8XY4: Adds VY to VX. VF is set to 1 when there's a carry, and to 0 when there isn't.
+               break;
+            case INDEX_OF_5:  // 8XY5: VY is subtracted from VX. VF is set to 0 when there's a borrow, and 1 when there isn't.
+               break;
+            case INDEX_OF_6:  // 8XY6: Shifts VX right by one. VF is set to the value of the least significant bit of VX before the shift.
+               break;
+            case INDEX_OF_7:  // 8XY7: Sets VX to VY minus VX. VF is set to 0 when there's a borrow, and 1 when there isn't.
+               break;
+            case INDEX_OF_E:  // 8XYE: Shifts VX left by one. VF is set to the value of the most significant bit of VX before the shift.
+               break;
+            default:
+               break;
+         }
+               break;
+      case TYPE_9:               // Skips the next instruction if VX doesn't equal VY. (Usually the next instruction is a jump to skip a code block)
+               break;
+      case TYPE_A:               // Sets I to the address NNN.
+               break;
+      case TYPE_B:               // Jumps to the address NNN plus V0.
+               break;
+      case TYPE_C:               // Sets VX to the result of a bitwise and operation on a random number (Typically: 0 to 255) and NN.
+               break;
+         /*
+          * Draws a sprite at coordinate (VX, VY) that has a width of 8 pixels and a height of N pixels.
+          * Each row of 8 pixels is read as bit-coded starting from memory location I;
+          * I value doesn’t change after the execution of this instruction.
+          * As described above, VF is set to 1 if any screen pixels are flipped from set to unset
+          * when the sprite is drawn, and to 0 if that doesn’t happen
+          */
+      case TYPE_D:
+               break;
+      case TYPE_E:               // KeyOp
+         unsigned short last_byte = opcode & TYPE_00NN;
+         switch (last_byte) {
+            case 0x009E:   // Skips the next instruction if the key stored in VX is pressed. (Usually the next instruction is a jump to skip a code block)
+               break;
+            case 0x00A1:   // Skips the next instruction if the key stored in VX isn't pressed. (Usually the next instruction is a jump to skip a code block)
+               break;
+            default:
+               break;
+         }
+               break;
+         /*
+          * Timer, KeyOp, sound, mem, bcd
+          */
+      case TYPE_F:
+         unsigned short lastbyte = opcode & TYPE_00NN;
+         switch (lastbyte) {
+            case value:
+
+               break;
+            default:
+               break;
+         }
+               break;
+      default:
+         break;
+   }
+
+   return rtn;
 }
