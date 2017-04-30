@@ -9,15 +9,20 @@
 #define CHIP_INC_CHIP8_H_
 
 #define FONTSET_SIZE       80
-#define MEMORY_SIZE        4096
+#define MEMORY_SIZE        0x1000   // 4096
 #define DISP_HOR           64
 #define DISP_VER           32
 #define NUM_KEYS           16
 #define REG_SIZE           16
 #define STACK_SIZE         16
 
-#define PC_START_ADDR      0x200
+#define APP_START_ADDR     0x200    // 512
 #define INDEX_OF_0         0
+#define INDEX_OF_1         1
+#define INDEX_OF_2         2
+
+#define READ_MODE          "r"
+#define TEST_APP           "C:\\Users\\fedcalderon\\workspace\\Chip8\\Apps\\tetris.c8"
 
 class Chip8 {
    public:
@@ -67,7 +72,15 @@ class Chip8 {
       /*
        * Initialization method
        */
-      void initialize();
+      void initializeChip8();
+      /*
+       * Load application program
+       */
+      bool loadApp(const char*);
+      /*
+       * Run method
+       */
+      void runEmulator();
 
    private:
       /*
