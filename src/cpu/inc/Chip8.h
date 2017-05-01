@@ -58,6 +58,16 @@
 #define RTN_SUBROUTINE       0x00EE
 #define TYPE_TIMER           0x0007
 #define KEY_OP               0x000A
+#define IF_KEY_PRESSED       0x009E
+#define IF_KEY_NOT_PRESSED   0x00A1
+#define AWAITED_KEY_PRESSED  0x000A
+#define DELAY_TIMER_TO_VX    0x0015
+#define SOUND_TIME_TO_VX     0X0018
+#define ADD_VX_TO_I          0X001E
+#define SPRITE_LOCATION      0X0029
+#define BIN_CODED_DEC        0X0033
+#define V0_TO_VX             0X0055
+#define FILL_V0_TO_VX        0X0065
 
 // Character constants
 #define READ_MODE          "r"
@@ -129,7 +139,7 @@ class Chip8 {
       /*
        * Print to the console hex values for debugging
        */
-      void logHex(const char*, unsigned short);
+      void log(const char*, unsigned short);
 
    private:
       /*
