@@ -32,7 +32,7 @@ void Chip8::initializeChip8(){
    opcode = INDEX_OF_0;
    I = INDEX_OF_0;
    stack_pointer = INDEX_OF_0;
-   needRedraw = true;
+   repaint = true;
    delay_timer = INDEX_OF_0;
    sound_timer = INDEX_OF_0;
 
@@ -144,8 +144,12 @@ bool Chip8::runEmulator(){
          // Inner switch to process internal options
          unsigned short opcode_internal_type = opcode_type & OPCODE_INNER_MASK;
          log("opcode_internal_type", opcode_internal_type);
+
          switch (opcode_internal_type) {
             case CLEAR_SCREEN:{   // 00E0: Clears the screen
+               display[DISP_HOR * DISP_VER] = { 0 };
+               pc += 2;
+               repaint = true;
                break;
             }
             case RTN_SUBROUTINE:{ // 00EE: Returns from a subroutine.
@@ -183,6 +187,8 @@ bool Chip8::runEmulator(){
       case TYPE_8:{   // Math operations
          // Inner switch over last nibble to process internal options.
          unsigned short last_nibble = opcode & TYPE_000N;
+         log("last_nibble", last_nibble);
+
          switch (last_nibble) {
             case INDEX_OF_0:{  // 8XY0: sets VX to the value of VY
                break;
@@ -243,6 +249,8 @@ bool Chip8::runEmulator(){
       }
       case TYPE_E:{               // KeyOp
          unsigned short last_byte = opcode & TYPE_00NN;
+         log("last_byte", last_byte);
+
          switch (last_byte) {
             case IF_KEY_PRESSED:{   // Skips the next instruction if the key stored in VX is pressed. (Usually the next instruction is a jump to skip a code block)
                break;
@@ -263,6 +271,8 @@ bool Chip8::runEmulator(){
        */
       case TYPE_F:{
          unsigned short lastbyte = opcode & TYPE_00NN;
+         log("lastbyte", lastbyte);
+
          switch (lastbyte) {
             case TYPE_TIMER:{   // Sets VX to the value of the delay timer.
                break;

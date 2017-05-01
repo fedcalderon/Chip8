@@ -110,15 +110,15 @@ class Chip8 {
       /*
        * The display is 64 x 32 pixels
        */
-      unsigned char display[DISP_HOR * DISP_VER];
+      unsigned char display[DISP_HOR * DISP_VER] = { 0 };
       /*
        * Key array has 16 keys, 0 - F
        */
-      unsigned char keys[NUM_KEYS];
+      unsigned char keys[NUM_KEYS] = { 0 };
       /*
        * The need to redraw flag
        */
-      bool needRedraw;
+      bool repaint;
 
       /*
        * Initialization method
@@ -148,16 +148,16 @@ class Chip8 {
        * Fontset: 0x50
        * Programs: 0x200
        */
-      unsigned char memory[MEMORY_SIZE];
+      unsigned char memory[MEMORY_SIZE] = { 0 };
       /*
        * There are 16 8-bit registers named from V0 - VF.
        * Reg 0xF used for carry, borrow and collision detection.
        */
-      unsigned char V[REG_SIZE];
+      unsigned char V[REG_SIZE] = { 0 };
       /*
        * There are 16 levels of nesting for the subroutine callstack
        */
-      unsigned short stack[STACK_SIZE];
+      unsigned short stack[STACK_SIZE] = { 0 };
       /*
        * Program counter is 16 bit (12 are used).
        * PC points to the current operation.
