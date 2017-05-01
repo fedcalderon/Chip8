@@ -56,9 +56,13 @@
 #define TYPE_000N            0x000F
 #define CLEAR_SCREEN         0x00E0
 #define RTN_SUBROUTINE       0x00EE
+#define TYPE_TIMER           0x0007
+#define KEY_OP               0x000A
 
 // Character constants
 #define READ_MODE          "r"
+
+// String constants
 #define TEST_APP           "C:\\Users\\fedcalderon\\workspace\\Chip8\\Apps\\tetris.c8"
 
 class Chip8 {
@@ -122,6 +126,10 @@ class Chip8 {
        * Run method
        */
       bool runEmulator();
+      /*
+       * Print to the console hex values for debugging
+       */
+      void logHex(const char*, unsigned short);
 
    private:
       /*

@@ -123,9 +123,7 @@ bool Chip8::runEmulator(){
    first_byte = first_byte << INDEX_OF_8;
    unsigned short second_byte = memory[pc + INDEX_OF_1];
    opcode = first_byte | second_byte;
-
-   cout << std::showbase << std::hex;
-   cout << "opcode = " << std::uppercase << opcode << endl;
+   logHex("opcode", opcode);
 
    /*
     * Decode opcode.
@@ -140,7 +138,7 @@ bool Chip8::runEmulator(){
 
    // Outer switch to control the types of opcodes
    switch (opcode_type) {
-      case TYPE_0:  // Display and flow
+      case TYPE_0:{  // Display and flow
          // Inner switch to process internal options
          unsigned short opcode_internal_type = opcode_type & OPCODE_INNER_MASK;
          switch (opcode_internal_type) {
@@ -152,21 +150,28 @@ bool Chip8::runEmulator(){
                break;
          }
          break;
-      case TYPE_1:               // Jumps to address NNN.
+      }
+      case TYPE_1:{               // Jumps to address NNN.
                break;
-      case TYPE_2:               // Calls subroutine at NNN.
+      }
+      case TYPE_2:{               // Calls subroutine at NNN.
                break;
-      case TYPE_3:               // Skips the next instruction if VX equals NN. (Usually the next instruction is a jump to skip a code block)
+      }
+      case TYPE_3:{               // Skips the next instruction if VX equals NN. (Usually the next instruction is a jump to skip a code block)
                break;
-      case TYPE_4:               // Skips the next instruction if VX doesn't equal NN. (Usually the next instruction is a jump to skip a code block)
+      }
+      case TYPE_4:{               // Skips the next instruction if VX doesn't equal NN. (Usually the next instruction is a jump to skip a code block)
                break;
-      case TYPE_5:               // Skips the next instruction if VX equals VY. (Usually the next instruction is a jump to skip a code block)
+      }
+      case TYPE_5:{               // Skips the next instruction if VX equals VY. (Usually the next instruction is a jump to skip a code block)
+               break;}
+      case TYPE_6:{               // Sets VX to NN.
                break;
-      case TYPE_6:               // Sets VX to NN.
-               break;
-      case TYPE_7:               // Adds NN to VX.
-               break;
-      case TYPE_8:               // Math operations
+      }
+      case TYPE_7:{               // Adds NN to VX.
+               break;}
+
+      case TYPE_8:{               // Math operations
          // Inner switch over last nibble to process internal options.
          unsigned short last_nibble = opcode & TYPE_000N;
          switch (last_nibble) {
@@ -192,14 +197,19 @@ bool Chip8::runEmulator(){
                break;
          }
                break;
-      case TYPE_9:               // Skips the next instruction if VX doesn't equal VY. (Usually the next instruction is a jump to skip a code block)
+      }
+      case TYPE_9:{               // Skips the next instruction if VX doesn't equal VY. (Usually the next instruction is a jump to skip a code block)
                break;
-      case TYPE_A:               // Sets I to the address NNN.
+      }
+      case TYPE_A:{               // Sets I to the address NNN.
                break;
-      case TYPE_B:               // Jumps to the address NNN plus V0.
+      }
+      case TYPE_B:{               // Jumps to the address NNN plus V0.
                break;
-      case TYPE_C:               // Sets VX to the result of a bitwise and operation on a random number (Typically: 0 to 255) and NN.
+      }
+      case TYPE_C:{               // Sets VX to the result of a bitwise and operation on a random number (Typically: 0 to 255) and NN.
                break;
+      }
          /*
           * Draws a sprite at coordinate (VX, VY) that has a width of 8 pixels and a height of N pixels.
           * Each row of 8 pixels is read as bit-coded starting from memory location I;
@@ -207,35 +217,52 @@ bool Chip8::runEmulator(){
           * As described above, VF is set to 1 if any screen pixels are flipped from set to unset
           * when the sprite is drawn, and to 0 if that doesn’t happen
           */
-      case TYPE_D:
+      case TYPE_D:{
                break;
-      case TYPE_E:               // KeyOp
+      }
+      case TYPE_E:{               // KeyOp
          unsigned short last_byte = opcode & TYPE_00NN;
          switch (last_byte) {
-            case 0x009E:   // Skips the next instruction if the key stored in VX is pressed. (Usually the next instruction is a jump to skip a code block)
+            case 0x009E:{   // Skips the next instruction if the key stored in VX is pressed. (Usually the next instruction is a jump to skip a code block)
                break;
-            case 0x00A1:   // Skips the next instruction if the key stored in VX isn't pressed. (Usually the next instruction is a jump to skip a code block)
+            }
+            case 0x00A1:{   // Skips the next instruction if the key stored in VX isn't pressed. (Usually the next instruction is a jump to skip a code block)
                break;
-            default:
+            }
+            default:{
                break;
+            }
          }
                break;
-         /*
-          * Timer, KeyOp, sound, mem, bcd
-          */
-      case TYPE_F:
+      }
+      /*
+       * Timer, KeyOp, sound, mem, bcd
+       */
+      case TYPE_F:{
          unsigned short lastbyte = opcode & TYPE_00NN;
          switch (lastbyte) {
-            case value:
-
+            case TYPE_TIMER:{
                break;
-            default:
+            }
+            default:{
                break;
+            }
          }
                break;
-      default:
+      }
+
+      default:{
          break;
+      }
    }
 
    return rtn;
+}
+
+/*
+ * Print to the console hex values for debugging
+ */
+void Chip8::logHex(const char *type, unsigned short n){
+   cout << std::showbase << std::hex;
+   cout << type << " = " << std::uppercase << n << endl;
 }
