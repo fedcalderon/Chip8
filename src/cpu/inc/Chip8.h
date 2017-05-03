@@ -85,7 +85,16 @@ class Chip8 {
        * Destructor
        */
       ~Chip8();
+      /*
+       * Load application program
+       */
+      bool loadApp(const char*);
+      /*
+       * Run display method
+       */
+      void runDisplay();
 
+   private:
       /*
        * Fontset definition. Memory position must be at 0x50 (80 decimal)
        */
@@ -119,29 +128,6 @@ class Chip8 {
        * The need to redraw flag
        */
       bool repaint;
-
-      /*
-       * Initialization method
-       */
-      void initializeChip8();
-      /*
-       * Load application program
-       */
-      bool loadApp(const char*);
-      /*
-       * Run display method
-       */
-      void runDisplay();
-      /*
-       * Run method
-       */
-      bool runEmulator();
-      /*
-       * Print to the console hex values for debugging
-       */
-      void log(const char*, unsigned short);
-
-   private:
       /*
        * Memory is 4KB
        * Internal use: 0x0000 - 0x0200
@@ -162,11 +148,11 @@ class Chip8 {
        * Program counter is 16 bit (12 are used).
        * PC points to the current operation.
        */
-      unsigned short pc;
+      unsigned short progCounter;
       /*
        * The index register, 16-bit register for memory address.
        */
-      unsigned short I;
+      unsigned short indexReg;
       /*
        * The Opcode. There are 35 opcodes which are 2 bytes long and stored big-endian.
        */
@@ -183,6 +169,18 @@ class Chip8 {
        * The Stack Pointer
        */
       unsigned short stack_pointer;
+      /*
+       * Initialization method
+       */
+      void initializeChip8();
+      /*
+       * Run method
+       */
+      bool runEmulator();
+      /*
+       * Print to the console hex values for debugging
+       */
+      void log(const char*, unsigned short);
 };
 
 #endif /* CHIP_INC_CHIP8_H_ */

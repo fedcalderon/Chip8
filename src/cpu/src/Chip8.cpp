@@ -28,9 +28,9 @@ Chip8::~Chip8(){ /* Emtpy */ }
 void Chip8::initializeChip8(){
    cout << "Entering initialize() ... " << endl;
 
-   pc = (char) APP_START_ADDR;
+   progCounter = (char) APP_START_ADDR;
    opcode = INDEX_OF_0;
-   I = INDEX_OF_0;
+   indexReg = INDEX_OF_0;
    stack_pointer = INDEX_OF_0;
    repaint = true;
    delay_timer = INDEX_OF_0;
@@ -119,9 +119,9 @@ bool Chip8::runEmulator(){
     * 3. Read contiguous byte from memory[pc+1]
     * 4. Bitwise OR both values to form opcode
     */
-   unsigned short first_byte = memory[pc];
+   unsigned short first_byte = memory[progCounter];
    first_byte = first_byte << INDEX_OF_8;
-   unsigned short second_byte = memory[pc + INDEX_OF_1];
+   unsigned short second_byte = memory[progCounter + INDEX_OF_1];
    opcode = first_byte | second_byte;
    // For debugging
    log("opcode", opcode);
@@ -141,18 +141,21 @@ bool Chip8::runEmulator(){
    // Outer switch to control the types of opcodes
    switch (opcode_type) {
       case TYPE_0:{  // Display and flow
-         // Inner switch to process internal options
+
          unsigned short opcode_internal_type = opcode_type & OPCODE_INNER_MASK;
          log("opcode_internal_type", opcode_internal_type);
 
+         // Inner switch to process internal options
          switch (opcode_internal_type) {
             case CLEAR_SCREEN:{   // 00E0: Clears the screen
                display[DISP_HOR * DISP_VER] = { 0 };
-               pc += 2;
+               // Advance program counter by 2 bytes
+               progCounter += 2;
                repaint = true;
                break;
             }
             case RTN_SUBROUTINE:{ // 00EE: Returns from a subroutine.
+
                break;
             }
             default:{
