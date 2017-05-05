@@ -14,13 +14,14 @@ using namespace std;
 
 Chip8 chip8;
 
+void testStateMachine();
 
 int main(int argc, char **argv){
    cout << "Entering Chip8 main() ... " << endl;
 
-   int rtn = INDEX_OF_0;
+   int rtn = COEFF_OF_0;
 
-   if(argc < INDEX_OF_2){
+   if(argc < COEFF_OF_2){
       cout << "Specify the name of the application you want to load. For ex, >Chip8.exe tetris.c8" << endl;
    }
 

@@ -18,16 +18,16 @@
 #define STACK_SIZE           16
 #define APP_START_ADDR       0x200    // 512
 
-#define INDEX_OF_0           0x0000
-#define INDEX_OF_1           0x0001
-#define INDEX_OF_2           0x0002
-#define INDEX_OF_3           0x0003
-#define INDEX_OF_4           0x0004
-#define INDEX_OF_5           0x0005
-#define INDEX_OF_6           0x0006
-#define INDEX_OF_7           0x0007
-#define INDEX_OF_8           0x0008
-#define INDEX_OF_E           0x000E
+#define COEFF_OF_0           0x0000
+#define COEFF_OF_1           0x0001
+#define COEFF_OF_2           0x0002
+#define COEFF_OF_3           0x0003
+#define COEFF_OF_4           0x0004
+#define COEFF_OF_5           0x0005
+#define COEFF_OF_6           0x0006
+#define COEFF_OF_7           0x0007
+#define COEFF_OF_8           0x0008
+#define COEFF_OF_E           0x000E
 
 #define OPCODE_OUTER_MASK    0xF000
 #define OPCODE_INNER_MASK    0xF000
@@ -51,9 +51,9 @@
 #define TYPE_F               0xF000
 
 // Inner opcode types
-#define TYPE_0NNN            0x0FFF
-#define TYPE_00NN            0x00FF
-#define TYPE_000N            0x000F
+#define MASK_0FFF            0x0FFF
+#define MASK_00FF            0x00FF
+#define MASK_000F            0x000F
 #define CLEAR_SCREEN         0x00E0
 #define RTN_SUBROUTINE       0x00EE
 #define TYPE_TIMER           0x0007
@@ -93,6 +93,14 @@ class Chip8 {
        * Run display method
        */
       void runDisplay();
+      /*
+       * Print to the console hex values for debugging
+       */
+      void log(const char*, unsigned short);
+      /*
+       * Process type 0 opcodes
+       */
+      bool processType0(unsigned short);
 
    private:
       /*
@@ -177,10 +185,6 @@ class Chip8 {
        * Run method
        */
       bool runEmulator();
-      /*
-       * Print to the console hex values for debugging
-       */
-      void log(const char*, unsigned short);
 };
 
 #endif /* CHIP_INC_CHIP8_H_ */

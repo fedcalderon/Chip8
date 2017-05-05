@@ -29,12 +29,12 @@ void Chip8::initializeChip8(){
    cout << "Entering initialize() ... " << endl;
 
    progCounter = (char) APP_START_ADDR;
-   opcode = INDEX_OF_0;
-   indexReg = INDEX_OF_0;
-   stack_pointer = INDEX_OF_0;
+   opcode = COEFF_OF_0;
+   indexReg = COEFF_OF_0;
+   stack_pointer = COEFF_OF_0;
    repaint = true;
-   delay_timer = INDEX_OF_0;
-   sound_timer = INDEX_OF_0;
+   delay_timer = COEFF_OF_0;
+   sound_timer = COEFF_OF_0;
 
    // Load fontset to memory
    for(int i = 0; i < FONTSET_SIZE; i++){
@@ -61,7 +61,7 @@ bool Chip8::loadApp(const char *file){
       cout << "Loading " << file << " ... " << endl;
 
       // Compute file size
-      fseek(pApp, INDEX_OF_0, SEEK_END);
+      fseek(pApp, COEFF_OF_0, SEEK_END);
       long fileSize = ftell(pApp);
 
       // Allocate memory for the application, check for errors
@@ -120,8 +120,8 @@ bool Chip8::runEmulator(){
     * 4. Bitwise OR both values to form opcode
     */
    unsigned short first_byte = memory[progCounter];
-   first_byte = first_byte << INDEX_OF_8;
-   unsigned short second_byte = memory[progCounter + INDEX_OF_1];
+   first_byte = first_byte << COEFF_OF_8;
+   unsigned short second_byte = memory[progCounter + COEFF_OF_1];
    opcode = first_byte | second_byte;
    // For debugging
    log("opcode", opcode);
@@ -141,83 +141,73 @@ bool Chip8::runEmulator(){
    // Outer switch to control the types of opcodes
    switch (opcode_type) {
       case TYPE_0:{  // Display and flow
-
          unsigned short opcode_internal_type = opcode_type & OPCODE_INNER_MASK;
          log("opcode_internal_type", opcode_internal_type);
-
-         // Inner switch to process internal options
-         switch (opcode_internal_type) {
-            case CLEAR_SCREEN:{   // 00E0: Clears the screen
-               display[DISP_HOR * DISP_VER] = { 0 };
-               // Advance program counter by 2 bytes
-               progCounter += 2;
-               repaint = true;
-               break;
-            }
-            case RTN_SUBROUTINE:{ // 00EE: Returns from a subroutine.
-
-               break;
-            }
-            default:{
-               rtn = false;
-               log("value is invalid!", opcode_internal_type);
-               break;
-            }
-         }
+         rtn = processType0(opcode_internal_type);
          break;
       }
       case TYPE_1:{   // Jumps to address NNN.
-               break;
+         // Get address by bitwise AND opcode with 0x0FFF
+         int address = opcode_type & MASK_0FFF;
+         progCounter = address;
+         log("Jumping to address: ", address);
+         break;
       }
       case TYPE_2:{   // Calls subroutine at NNN.
-               break;
+         // Save address in the stack
+         stack[stack_pointer] = progCounter;
+         // Point to the next item in the stack
+         stack_pointer++;
+         // Set program counter to address NNN decoded from opcode
+         progCounter = opcode_type & MASK_0FFF;
+         break;
       }
       case TYPE_3:{   // Skips the next instruction if VX equals NN. (Usually the next instruction is a jump to skip a code block)
-               break;
+         break;
       }
       case TYPE_4:{   // Skips the next instruction if VX doesn't equal NN. (Usually the next instruction is a jump to skip a code block)
-               break;
+         break;
       }
       case TYPE_5:{   // Skips the next instruction if VX equals VY. (Usually the next instruction is a jump to skip a code block)
-               break;
+         break;
       }
       case TYPE_6:{   // Sets VX to NN.
-               break;
+         break;
       }
       case TYPE_7:{   // Adds NN to VX.
-               break;}
+         break;}
 
       case TYPE_8:{   // Math operations
          // Inner switch over last nibble to process internal options.
-         unsigned short last_nibble = opcode & TYPE_000N;
+         unsigned short last_nibble = opcode & MASK_000F;
          log("last_nibble", last_nibble);
 
          switch (last_nibble) {
-            case INDEX_OF_0:{  // 8XY0: sets VX to the value of VY
+            case COEFF_OF_0:{  // 8XY0: sets VX to the value of VY
                break;
             }
-            case INDEX_OF_1:{  // 8XY1: Sets VX to VX or VY. (Bitwise OR operation) VF is reset to 0.
+            case COEFF_OF_1:{  // 8XY1: Sets VX to VX or VY. (Bitwise OR operation) VF is reset to 0.
                break;
             }
-            case INDEX_OF_2:{  // 8XY2: Sets VX to VX and VY. (Bitwise AND operation) VF is reset to 0.
+            case COEFF_OF_2:{  // 8XY2: Sets VX to VX and VY. (Bitwise AND operation) VF is reset to 0.
                break;
             }
-            case INDEX_OF_3:{  // 8XY3: Sets VX to VX xor VY. VF is reset to 0.
+            case COEFF_OF_3:{  // 8XY3: Sets VX to VX xor VY. VF is reset to 0.
                break;
             }
-            case INDEX_OF_4:{  // 8XY4: Adds VY to VX. VF is set to 1 when there's a carry, and to 0 when there isn't.
+            case COEFF_OF_4:{  // 8XY4: Adds VY to VX. VF is set to 1 when there's a carry, and to 0 when there isn't.
                break;
             }
-            case INDEX_OF_5:{  // 8XY5: VY is subtracted from VX. VF is set to 0 when there's a borrow, and 1 when there isn't.
+            case COEFF_OF_5:{  // 8XY5: VY is subtracted from VX. VF is set to 0 when there's a borrow, and 1 when there isn't.
                break;
             }
-            case INDEX_OF_6:{  // 8XY6: Shifts VX right by one. VF is set to the value of the least significant bit of VX before the shift.
+            case COEFF_OF_6:{  // 8XY6: Shifts VX right by one. VF is set to the value of the least significant bit of VX before the shift.
                break;
             }
-            case INDEX_OF_7:{  // 8XY7: Sets VX to VY minus VX. VF is set to 0 when there's a borrow, and 1 when there isn't.
+            case COEFF_OF_7:{  // 8XY7: Sets VX to VY minus VX. VF is set to 0 when there's a borrow, and 1 when there isn't.
                break;
             }
-            case INDEX_OF_E:{  // 8XYE: Shifts VX left by one. VF is set to the value of the most significant bit of VX before the shift.
+            case COEFF_OF_E:{  // 8XYE: Shifts VX left by one. VF is set to the value of the most significant bit of VX before the shift.
                break;
             }
             default:{
@@ -226,7 +216,7 @@ bool Chip8::runEmulator(){
                break;
             }
          }
-               break;
+         break;
       }
       case TYPE_9:{    // Skips the next instruction if VX doesn't equal VY. (Usually the next instruction is a jump to skip a code block)
                break;
@@ -251,7 +241,7 @@ bool Chip8::runEmulator(){
                break;
       }
       case TYPE_E:{               // KeyOp
-         unsigned short last_byte = opcode & TYPE_00NN;
+         unsigned short last_byte = opcode & MASK_00FF;
          log("last_byte", last_byte);
 
          switch (last_byte) {
@@ -273,7 +263,7 @@ bool Chip8::runEmulator(){
        * Timer, KeyOp, sound, mem, bcd
        */
       case TYPE_F:{
-         unsigned short lastbyte = opcode & TYPE_00NN;
+          unsigned short lastbyte = opcode & MASK_00FF;
          log("lastbyte", lastbyte);
 
          switch (lastbyte) {
@@ -325,6 +315,34 @@ bool Chip8::runEmulator(){
       }
    }
 
+   return rtn;
+}
+
+bool Chip8::processType0(unsigned short opcode_internal_type){
+   bool rtn = true;
+   // Inner switch to process internal options
+   switch (opcode_internal_type) {
+      case CLEAR_SCREEN: {   // 00E0: Clears the screen
+         log("Clearing the screen", opcode_internal_type);
+         display[DISP_HOR * DISP_VER] = {0};
+         // Advance program counter by 2 bytes
+         progCounter += COEFF_OF_2;
+         repaint = true;
+         break;
+      }
+      case RTN_SUBROUTINE: { // 00EE: Returns from a subroutine.
+         log("return from a subroutine", 0);
+         stack_pointer--;
+         progCounter = stack[stack_pointer + COEFF_OF_2];
+         progCounter += COEFF_OF_2;
+         break;
+      }
+      default: {
+         rtn = false;
+         log("value is invalid!", opcode_internal_type);
+         break;
+      }
+   }
    return rtn;
 }
 
