@@ -265,19 +265,17 @@ bool Chip8::runEmulator(){
        * Timer, KeyOp, sound, mem, bcd
        */
       case TYPE_F:{
-          unsigned short oc = opcode & MASK_00FF;
+         unsigned short oc = opcode & MASK_00FF;
          log("lastbyte", oc);
-
+         int X = extractSecNibble(oc);
          switch (oc) {
-            case TYPE_TIMER:{   // FX07 - Sets VX to the value of the delay timer.
-               int X = extractSecNibble(oc);
+            case TYPE_TIMER:{   // 0xFX07 - Sets VX to the value of the delay timer.
                V[X] = delay_timer;
                std::string msg ("V[%s] = ", X);
                log(msg, delay_timer);
                break;
             }
-            case AWAITED_KEY_PRESSED: { // A key press is awaited, and then stored in VX. (Blocking Operation. All instruction halted until next key event)
-               int X = extractSecNibble(oc);
+            case AWAITED_KEY_PRESSED: { // 0x000A - A key press is awaited, and then stored in VX. (Blocking Operation. All instruction halted until next key event)
                for (int i = 0; i < NUM_KEYS; i++) {
                   if (keys[i] == COEFF_OF_1) {
                      V[X] = i;
@@ -285,20 +283,47 @@ bool Chip8::runEmulator(){
                      break;
                   }
                }
-               std::string msg ("key stored in V[%s] = ", V[X]);
+               std::string msg ("key stored in V[X] = ");
                log(msg, V[X]);
                break;
             }
-            case DELAY_TIMER_TO_VX:{   // Sets the delay timer to VX.
+            case DELAY_TIMER_TO_VX:{   // 0x0015 - Sets the delay timer to VX.
+               delay_timer = V[X];
+               progCounter += COEFF_OF_2;
+               std::string msg ("delay timer is set to V[X] = ");
+               log(msg, V[X]);
                break;
             }
-            case SOUND_TIME_TO_VX:{   // Sets the sound timer to VX.
+            case SOUND_TIMER_TO_VX:{   // 0X0018 - Sets the sound timer to VX.
+               sound_timer = V[X];
+               progCounter += COEFF_OF_2;
+               std::string msg ("sound timer is set to V[X] = ");
+               log(msg, V[X]);
                break;
             }
-            case ADD_VX_TO_I:{   // Adds VX to I.
+            case ADD_VX_TO_I:{   // 0X001E - Adds VX to I.
+               // VF is set to 1 when there is a range overflow (I+VX>0xFFF), and to 0 when there isn't.
+               // This is an undocumented feature of the CHIP-8 and used by the Spacefight 2091! game.
+               if((indexReg + V[X]) > OVERFLOW_LIMIT){
+                  V[ADDR_F] = COEFF_OF_1;
+               }
+               else{
+                  V[ADDR_F] = COEFF_OF_0;
+               }
+               indexReg += V[X];
+               progCounter += COEFF_OF_2;
+               std::string msg ("sound timer is set to V[X] = ");
+               log(msg, V[X]);
                break;
             }
-            case SPRITE_LOCATION:{   // Sets I to the location of the sprite for the character in VX. Characters 0-F (in hexadecimal) are represented by a 4x5 font.
+            // Sets I to the location of the sprite for the character in VX. Characters 0-F (in hexadecimal)
+            // are represented by a 4x5 font.
+            case SPRITE_LOCATION:{   // 0X0029
+               int character_pixel = V[X];
+               indexReg = 0x050 + (character_pixel * 5);
+               progCounter += COEFF_OF_2;
+               std::string msg ("set index register I to V[%d] = %d, offset to 0x");
+               log(msg, indexReg);
                break;
             }
             /*
@@ -309,6 +334,7 @@ bool Chip8::runEmulator(){
              * location I+2.)
              */
             case BIN_CODED_DEC:{
+
                break;
             }
             case V0_TO_VX:{   // Stores V0 to VX (including VX) in memory starting at address I.
@@ -323,7 +349,7 @@ bool Chip8::runEmulator(){
                break;
             }
          }
-               break;
+         break;
       }
 
       default:{

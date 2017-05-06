@@ -20,6 +20,7 @@
 #define REG_SIZE             16
 #define STACK_SIZE           16
 #define APP_START_ADDR       0x200    // 512
+#define OVERFLOW_LIMIT       0xFFF
 
 #define COEFF_OF_0           0x0000
 #define COEFF_OF_1           0x0001
@@ -31,6 +32,8 @@
 #define COEFF_OF_7           0x0007
 #define COEFF_OF_8           0x0008
 #define COEFF_OF_E           0x000E
+
+#define ADDR_F               0xF
 
 #define OPCODE_OUTER_MASK    0xF000
 #define OPCODE_INNER_MASK    0xF000
@@ -66,7 +69,7 @@
 #define IF_KEY_NOT_PRESSED   0x00A1
 #define AWAITED_KEY_PRESSED  0x000A
 #define DELAY_TIMER_TO_VX    0x0015
-#define SOUND_TIME_TO_VX     0X0018
+#define SOUND_TIMER_TO_VX     0X0018
 #define ADD_VX_TO_I          0X001E
 #define SPRITE_LOCATION      0X0029
 #define BIN_CODED_DEC        0X0033
