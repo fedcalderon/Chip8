@@ -4,6 +4,7 @@
 // Version     :
 // Copyright   : Your copyright notice
 // Description : Hello World in C++, Ansi-style
+// Opcode description taken from https://en.wikipedia.org/wiki/CHIP-8
 //============================================================================
 
 #include "../../cpu/inc/Chip8.h"
@@ -243,23 +244,11 @@ bool Chip8::runEmulator(){
                break;
       }
       case TYPE_E:{               // KeyOp
-         unsigned short last_byte = opcode & MASK_00FF;
-         log("last_byte", last_byte);
-
-         switch (last_byte) {
-            case IF_KEY_PRESSED:{   // Skips the next instruction if the key stored in VX is pressed. (Usually the next instruction is a jump to skip a code block)
-               break;
-            }
-            case IF_KEY_NOT_PRESSED:{   // Skips the next instruction if the key stored in VX isn't pressed. (Usually the next instruction is a jump to skip a code block)
-               break;
-            }
-            default:{
-               rtn = false;
-               log("value is invalid!", last_byte);
-               break;
-            }
-         }
-               break;
+         unsigned short oc = opcode & MASK_00FF;
+         log("last_byte", oc);
+         int X = extractSecNibble(oc);
+         rtn = processTypeE(oc, X);
+         break;
       }
       /*
        * Timer, KeyOp, sound, mem, bcd
@@ -268,87 +257,7 @@ bool Chip8::runEmulator(){
          unsigned short oc = opcode & MASK_00FF;
          log("lastbyte", oc);
          int X = extractSecNibble(oc);
-         switch (oc) {
-            case TYPE_TIMER:{   // 0xFX07 - Sets VX to the value of the delay timer.
-               V[X] = delay_timer;
-               std::string msg ("V[%s] = ", X);
-               log(msg, delay_timer);
-               break;
-            }
-            case AWAITED_KEY_PRESSED: { // 0x000A - A key press is awaited, and then stored in VX. (Blocking Operation. All instruction halted until next key event)
-               for (int i = 0; i < NUM_KEYS; i++) {
-                  if (keys[i] == COEFF_OF_1) {
-                     V[X] = i;
-                     progCounter += COEFF_OF_2;
-                     break;
-                  }
-               }
-               std::string msg ("key stored in V[X] = ");
-               log(msg, V[X]);
-               break;
-            }
-            case DELAY_TIMER_TO_VX:{   // 0x0015 - Sets the delay timer to VX.
-               delay_timer = V[X];
-               progCounter += COEFF_OF_2;
-               std::string msg ("delay timer is set to V[X] = ");
-               log(msg, V[X]);
-               break;
-            }
-            case SOUND_TIMER_TO_VX:{   // 0X0018 - Sets the sound timer to VX.
-               sound_timer = V[X];
-               progCounter += COEFF_OF_2;
-               std::string msg ("sound timer is set to V[X] = ");
-               log(msg, V[X]);
-               break;
-            }
-            case ADD_VX_TO_I:{   // 0X001E - Adds VX to I.
-               // VF is set to 1 when there is a range overflow (I+VX>0xFFF), and to 0 when there isn't.
-               // This is an undocumented feature of the CHIP-8 and used by the Spacefight 2091! game.
-               if((indexReg + V[X]) > OVERFLOW_LIMIT){
-                  V[ADDR_F] = COEFF_OF_1;
-               }
-               else{
-                  V[ADDR_F] = COEFF_OF_0;
-               }
-               indexReg += V[X];
-               progCounter += COEFF_OF_2;
-               std::string msg ("sound timer is set to V[X] = ");
-               log(msg, V[X]);
-               break;
-            }
-            // Sets I to the location of the sprite for the character in VX. Characters 0-F (in hexadecimal)
-            // are represented by a 4x5 font.
-            case SPRITE_LOCATION:{   // 0X0029
-               int character_pixel = V[X];
-               indexReg = 0x050 + (character_pixel * 5);
-               progCounter += COEFF_OF_2;
-               std::string msg ("set index register I to V[%d] = %d, offset to 0x");
-               log(msg, indexReg);
-               break;
-            }
-            /*
-             * Stores the binary-coded decimal representation of VX, with the most significant of three
-             * digits at the address in I, the middle digit at I plus 1, and the least significant digit
-             * at I plus 2. (In other words, take the decimal representation of VX, place the hundreds
-             * digit in memory at location in I, the tens digit at location I+1, and the ones digit at
-             * location I+2.)
-             */
-            case BIN_CODED_DEC:{
-
-               break;
-            }
-            case V0_TO_VX:{   // Stores V0 to VX (including VX) in memory starting at address I.
-               break;
-            }
-            case FILL_V0_TO_VX:{   // Fills V0 to VX (including VX) with values from memory starting at address I.
-               break;
-            }
-            default:{
-               rtn = false;
-               log("value is invalid!", oc);
-               break;
-            }
-         }
+         rtn = processTypeF(oc, X);
          break;
       }
 
@@ -385,6 +294,163 @@ bool Chip8::processType0(unsigned short opcode_internal_type){
       default: {
          rtn = false;
          log("value is invalid!", opcode_internal_type);
+         break;
+      }
+   }
+   return rtn;
+}
+
+/*
+ * Process type E opcodes
+ */
+bool Chip8::processTypeE(unsigned short oc, int X){
+   bool rtn = true;
+
+   switch (oc) {
+      // Skips the next instruction if the key stored in VX is pressed.
+      // (Usually the next instruction is a jump to skip a code block)
+      case IF_KEY_PRESSED:{ // 0x009E
+         int key = V[X];
+         if(keys[key] == COEFF_OF_1){
+            progCounter += COEFF_OF_4;
+         }
+         else {
+            progCounter += COEFF_OF_2;
+         }
+         printf("Skipping next instruction if V[%d] = %d is pressed", (int)X, (int)V[X]);
+         break;
+      }
+      // Skips the next instruction if the key stored in VX isn't pressed.
+      // (Usually the next instruction is a jump to skip a code block)
+      case IF_KEY_NOT_PRESSED:{ // 0x00A1
+         int key = V[X];
+         if(keys[key] == COEFF_OF_0){
+            progCounter += COEFF_OF_4;
+         }
+         else {
+            progCounter += COEFF_OF_2;
+         }
+         printf("Skipping next instruction if V[%d] = %d is not pressed", (int)X, (int)V[X]);
+         break;
+      }
+      default:{
+         rtn = false;
+         log("value is invalid!", oc);
+         break;
+      }
+   }
+
+   return rtn;
+}
+
+/*
+ * Process type F opcodes
+ */
+bool Chip8::processTypeF(unsigned short oc, int X){
+   bool rtn = true;
+
+   switch (oc) {
+      case TYPE_TIMER:{   // 0xFX07 - Sets VX to the value of the delay timer.
+         V[X] = delay_timer;
+         std::string msg ("V[%s] = ", X);
+         log(msg, delay_timer);
+         break;
+      }
+      case AWAITED_KEY_PRESSED: { // 0x000A - A key press is awaited, and then stored in VX. (Blocking Operation. All instruction halted until next key event)
+         for (int i = 0; i < NUM_KEYS; i++) {
+            if (keys[i] == COEFF_OF_1) {
+               V[X] = i;
+               progCounter += COEFF_OF_2;
+               break;
+            }
+         }
+         std::string msg ("key stored in V[X] = ");
+         log(msg, V[X]);
+         break;
+      }
+      case DELAY_TIMER_TO_VX:{   // 0x0015 - Sets the delay timer to VX.
+         delay_timer = V[X];
+         progCounter += COEFF_OF_2;
+         std::string msg ("delay timer is set to V[X] = ");
+         log(msg, V[X]);
+         break;
+      }
+      case SOUND_TIMER_TO_VX:{   // 0X0018 - Sets the sound timer to VX.
+         sound_timer = V[X];
+         progCounter += COEFF_OF_2;
+         std::string msg ("sound timer is set to V[X] = ");
+         log(msg, V[X]);
+         break;
+      }
+      case ADD_VX_TO_I:{   // 0X001E - Adds VX to I.
+         // VF is set to 1 when there is a range overflow (I+VX>0xFFF), and to 0 when there isn't.
+         // This is an undocumented feature of the CHIP-8 and used by the Spacefight 2091! game.
+         if((indexReg + V[X]) > OVERFLOW_LIMIT){
+            V[ADDR_F] = COEFF_OF_1;
+         }
+         else{
+            V[ADDR_F] = COEFF_OF_0;
+         }
+         indexReg += V[X];
+         progCounter += COEFF_OF_2;
+         std::string msg ("sound timer is set to V[X] = ");
+         log(msg, V[X]);
+         break;
+      }
+      // Sets I to the location of the sprite for the character in VX. Characters 0-F (in hexadecimal)
+      // are represented by a 4x5 font.
+      case SPRITE_LOCATION:{   // 0X0029
+         int character_pixel = V[X];
+         indexReg = 0x050 + (character_pixel * 5);
+         progCounter += COEFF_OF_2;
+         std::string msg ("set index register I to V[%d] = %d, offset to 0x", X, V[X]);
+         log(msg, indexReg);
+         break;
+      }
+      /*
+       * Stores the binary-coded decimal representation of VX, with the most significant of three
+       * digits at the address in I, the middle digit at I plus 1, and the least significant digit
+       * at I plus 2. (In other words, take the decimal representation of VX, place the hundreds
+       * digit in memory at location in I, the tens digit at location I+1, and the ones digit at
+       * location I+2.)
+       */
+      case BIN_CODED_DEC:{ //0X0033
+         // Compute hundreds and tens
+         int n = V[X];
+         int hundreds = (n - (n % COEFF_OF_100)) / COEFF_OF_100;
+         n = n - (hundreds * COEFF_OF_100);
+         int tens = (n - (n % COEFF_OF_10)) / COEFF_OF_10;
+         n = n - (tens * COEFF_OF_10);
+         // Save hundreds and tens in memory
+         memory[indexReg] = hundreds;
+         memory[indexReg + COEFF_OF_1] = tens;
+         memory[indexReg + COEFF_OF_2] = n;
+         progCounter += COEFF_OF_2;
+         std::string msg ("binary coded decimal V[%d] = %d, offset to 0x");
+         log(msg, indexReg);
+         break;
+      }
+      case V0_TO_VX:{   // 0X0055 - Stores V0 to VX (including VX) in memory starting at address I.
+         for(int i = 0; i <= X; i++){
+            memory[indexReg + i] = V[i];
+         }
+         progCounter += COEFF_OF_2;
+         std::string msg ("storing in memory[%d] = V[0] to V[%d]", indexReg, X);
+         log(msg, 0);
+         break;
+      }
+      case FILL_V0_TO_VX:{   // Fills V0 to VX (including VX) with values from memory starting at address I.
+         for(int i = 0; i <= X; i++){
+            V[i] = memory[indexReg + i];
+         }
+         progCounter += COEFF_OF_2;
+         indexReg += (X + COEFF_OF_1);
+
+         break;
+      }
+      default:{
+         rtn = false;
+         log("value is invalid!", oc);
          break;
       }
    }

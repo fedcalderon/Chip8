@@ -32,6 +32,8 @@
 #define COEFF_OF_7           0x0007
 #define COEFF_OF_8           0x0008
 #define COEFF_OF_E           0x000E
+#define COEFF_OF_10          10
+#define COEFF_OF_100         100
 
 #define ADDR_F               0xF
 
@@ -100,14 +102,6 @@ class Chip8 {
        * Run display method
        */
       void runDisplay();
-      /*
-       * Print to the console hex values for debugging
-       */
-      void log(std::string , unsigned short);
-      /*
-       * Process type 0 opcodes
-       */
-      bool processType0(unsigned short);
       /*
        * Extract second nibble
        */
@@ -196,6 +190,23 @@ class Chip8 {
        * Run method
        */
       bool runEmulator();
+      /*
+       * Print to the console hex values for debugging
+       */
+      void log(std::string , unsigned short);
+      /*
+       * Process type 0 opcodes
+       */
+      bool processType0(unsigned short);
+      /*
+       * Process type E opcodes
+       */
+      bool processTypeE(unsigned short, int);
+      /*
+       * Process type F opcodes
+       */
+      bool processTypeF(unsigned short, int);
+
 };
 
 #endif /* CHIP_INC_CHIP8_H_ */
