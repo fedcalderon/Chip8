@@ -11,7 +11,6 @@
 #include <iostream>
 #include <string>
 #include <fstream>
-#include <iostream>
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
@@ -149,6 +148,7 @@ bool Chip8::runEmulator(){
       case TYPE_1:{   // Jumps to address NNN.
          // Get address by bitwise AND opcode with 0x0FFF
          int address = opcode_type & MASK_0FFF;
+         // Set program counter to address
          progCounter = address;
          log("Jumping to address: ", address);
          break;
@@ -160,6 +160,8 @@ bool Chip8::runEmulator(){
          stack_pointer++;
          // Set program counter to address NNN decoded from opcode
          progCounter = opcode_type & MASK_0FFF;
+         log("Calling ", progCounter);
+         log("From ", stack[stack_pointer - COEFF_OF_1]);
          break;
       }
       case TYPE_3:{   // Skips the next instruction if VX equals NN. (Usually the next instruction is a jump to skip a code block)
@@ -263,14 +265,28 @@ bool Chip8::runEmulator(){
        * Timer, KeyOp, sound, mem, bcd
        */
       case TYPE_F:{
-          unsigned short lastbyte = opcode & MASK_00FF;
-         log("lastbyte", lastbyte);
+          unsigned short oc = opcode & MASK_00FF;
+         log("lastbyte", oc);
 
-         switch (lastbyte) {
-            case TYPE_TIMER:{   // Sets VX to the value of the delay timer.
+         switch (oc) {
+            case TYPE_TIMER:{   // FX07 - Sets VX to the value of the delay timer.
+               int X = extractSecNibble(oc);
+               V[X] = delay_timer;
+               std::string msg ("V[%s] = ", X);
+               log(msg, delay_timer);
                break;
             }
-            case AWAITED_KEY_PRESSED:{   // A key press is awaited, and then stored in VX. (Blocking Operation. All instruction halted until next key event)
+            case AWAITED_KEY_PRESSED: { // A key press is awaited, and then stored in VX. (Blocking Operation. All instruction halted until next key event)
+               int X = extractSecNibble(oc);
+               for (int i = 0; i < NUM_KEYS; i++) {
+                  if (keys[i] == COEFF_OF_1) {
+                     V[X] = i;
+                     progCounter += COEFF_OF_2;
+                     break;
+                  }
+               }
+               std::string msg ("key stored in V[%s] = ", V[X]);
+               log(msg, V[X]);
                break;
             }
             case DELAY_TIMER_TO_VX:{   // Sets the delay timer to VX.
@@ -303,7 +319,7 @@ bool Chip8::runEmulator(){
             }
             default:{
                rtn = false;
-               log("value is invalid!", lastbyte);
+               log("value is invalid!", oc);
                break;
             }
          }
@@ -318,6 +334,9 @@ bool Chip8::runEmulator(){
    return rtn;
 }
 
+/*
+ * This method processes type 0 opcode options
+ */
 bool Chip8::processType0(unsigned short opcode_internal_type){
    bool rtn = true;
    // Inner switch to process internal options
@@ -347,9 +366,21 @@ bool Chip8::processType0(unsigned short opcode_internal_type){
 }
 
 /*
+ * Extract second nibble
+ */
+int Chip8::extractSecNibble(unsigned short oc){
+   /*
+    * To extract X, bitwise AND 0x0X07 with 0x0F00, shift 0x0X00 right
+    */
+   int x = oc & MASK_0F00;
+   int x_shifted = x >> COEFF_OF_8;
+   return x_shifted;
+}
+
+/*
  * Print messages to the console for debugging
  */
-void Chip8::log(const char *type, unsigned short n){
+void Chip8::log(std::string type, unsigned short n){
    cout << std::showbase << std::hex;
    cout << type << " = " << std::uppercase << n << endl;
 }

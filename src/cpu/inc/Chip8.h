@@ -8,6 +8,9 @@
 #ifndef CHIP_INC_CHIP8_H_
 #define CHIP_INC_CHIP8_H_
 
+#include <iostream>
+#include <string>
+
 // Numeric constants
 #define FONTSET_SIZE         80
 #define MEMORY_SIZE          0x1000   // 4096
@@ -54,6 +57,7 @@
 #define MASK_0FFF            0x0FFF
 #define MASK_00FF            0x00FF
 #define MASK_000F            0x000F
+#define MASK_0F00            0x0F00
 #define CLEAR_SCREEN         0x00E0
 #define RTN_SUBROUTINE       0x00EE
 #define TYPE_TIMER           0x0007
@@ -73,7 +77,7 @@
 #define READ_MODE          "r"
 
 // String constants
-#define TEST_APP           "C:\\Users\\fedcalderon\\workspace\\Chip8\\Apps\\tetris.c8"
+#define TEST_APP           "C:\\Users\\fedcalderon\\workspace\\Chip8\\Apps\\pong2.c8"
 
 class Chip8 {
    public:
@@ -96,11 +100,15 @@ class Chip8 {
       /*
        * Print to the console hex values for debugging
        */
-      void log(const char*, unsigned short);
+      void log(std::string , unsigned short);
       /*
        * Process type 0 opcodes
        */
       bool processType0(unsigned short);
+      /*
+       * Extract second nibble
+       */
+      int extractSecNibble(unsigned short);
 
    private:
       /*
