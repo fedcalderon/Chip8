@@ -140,13 +140,16 @@ bool Chip8::runEmulator(){
 
    // Outer switch to control the types of opcodes
    switch (opcode_type) {
-      case TYPE_0:{  // Display and flow
+
+      // Display and flow
+      case TYPE_0:{  // 0x0000
          unsigned short opcode_internal_type = opcode_type & OPCODE_INNER_MASK;
          log("opcode_internal_type", opcode_internal_type);
          rtn = processType0(opcode_internal_type);
          break;
       }
-      case TYPE_1:{   // Jumps to address NNN.
+      // Jumps to address NNN.
+      case TYPE_1:{ // 0x1000
          // Get address by bitwise AND opcode with 0x0FFF
          int address = opcode_type & MASK_0FFF;
          // Set program counter to address
@@ -154,7 +157,8 @@ bool Chip8::runEmulator(){
          log("Jumping to address: ", address);
          break;
       }
-      case TYPE_2:{   // Calls subroutine at NNN.
+      // Calls subroutine at NNN.
+      case TYPE_2:{ // 0x2000
          // Save address in the stack
          stack[stack_pointer] = progCounter;
          // Point to the next item in the stack
@@ -165,73 +169,89 @@ bool Chip8::runEmulator(){
          log("From ", stack[stack_pointer - COEFF_OF_1]);
          break;
       }
-      case TYPE_3:{   // Skips the next instruction if VX equals NN. (Usually the next instruction is a jump to skip a code block)
-         break;
-      }
-      case TYPE_4:{   // Skips the next instruction if VX doesn't equal NN. (Usually the next instruction is a jump to skip a code block)
-         break;
-      }
-      case TYPE_5:{   // Skips the next instruction if VX equals VY. (Usually the next instruction is a jump to skip a code block)
-         break;
-      }
-      case TYPE_6:{   // Sets VX to NN.
-         break;
-      }
-      case TYPE_7:{   // Adds NN to VX.
-         break;}
-
-      case TYPE_8:{   // Math operations
-         // Inner switch over last nibble to process internal options.
-         unsigned short last_nibble = opcode & MASK_000F;
-         log("last_nibble", last_nibble);
-
-         switch (last_nibble) {
-            case COEFF_OF_0:{  // 8XY0: sets VX to the value of VY
-               break;
-            }
-            case COEFF_OF_1:{  // 8XY1: Sets VX to VX or VY. (Bitwise OR operation) VF is reset to 0.
-               break;
-            }
-            case COEFF_OF_2:{  // 8XY2: Sets VX to VX and VY. (Bitwise AND operation) VF is reset to 0.
-               break;
-            }
-            case COEFF_OF_3:{  // 8XY3: Sets VX to VX xor VY. VF is reset to 0.
-               break;
-            }
-            case COEFF_OF_4:{  // 8XY4: Adds VY to VX. VF is set to 1 when there's a carry, and to 0 when there isn't.
-               break;
-            }
-            case COEFF_OF_5:{  // 8XY5: VY is subtracted from VX. VF is set to 0 when there's a borrow, and 1 when there isn't.
-               break;
-            }
-            case COEFF_OF_6:{  // 8XY6: Shifts VX right by one. VF is set to the value of the least significant bit of VX before the shift.
-               break;
-            }
-            case COEFF_OF_7:{  // 8XY7: Sets VX to VY minus VX. VF is set to 0 when there's a borrow, and 1 when there isn't.
-               break;
-            }
-            case COEFF_OF_E:{  // 8XYE: Shifts VX left by one. VF is set to the value of the most significant bit of VX before the shift.
-               break;
-            }
-            default:{
-               rtn = false;
-               log("value is invalid!", last_nibble);
-               break;
-            }
+      // Skips the next instruction if VX equals NN.
+      // (Usually the next instruction is a jump to skip a code block)
+      case TYPE_3:{
+         int X = extractSecNibble(opcode_type);
+         int NN = opcode_type & MASK_00FF;
+         if(V[X] == NN){
+            progCounter += COEFF_OF_4;
+         }
+         else{
+            progCounter += COEFF_OF_2;
          }
          break;
       }
-      case TYPE_9:{    // Skips the next instruction if VX doesn't equal VY. (Usually the next instruction is a jump to skip a code block)
-               break;
+      // Skips the next instruction if VX doesn't equal NN.
+      // (Usually the next instruction is a jump to skip a code block)
+      case TYPE_4:{
+         int X = extractSecNibble(opcode_type);
+         int NN = opcode_type & MASK_00FF;
+         if(V[X] != NN){
+            progCounter += COEFF_OF_4;
+         }
+         else{
+            progCounter += COEFF_OF_2;
+         }
+         break;
       }
-      case TYPE_A:{    // Sets I to the address NNN.
-               break;
+      // Skips the next instruction if VX equals VY.
+      // (Usually the next instruction is a jump to skip a code block)
+      case TYPE_5:{ // 5XY0
+         int X = extractSecNibble(opcode_type);
+         int Y = extractThirdNibble(opcode_type);
+         if(V[X] == V[Y]){
+            progCounter += COEFF_OF_4;
+         }
+         else{
+            progCounter += COEFF_OF_2;
+         }
+         break;
+      }
+      case TYPE_6:{   // 6XNN - Sets VX to NN.
+         int X = extractSecNibble(opcode_type);
+         int NN = opcode_type & MASK_00FF;
+         V[X] = NN;
+         progCounter += COEFF_OF_2;
+         break;
+      }
+      case TYPE_7:{   // 7XNN - Adds NN to VX.
+         int X = extractSecNibble(opcode_type);
+         int NN = opcode_type & MASK_00FF;
+         V[X] += NN;
+         progCounter += COEFF_OF_2;
+         break;
+      }
+      case TYPE_8:{   // Math operations
+         // Inner switch over last nibble to process internal options.
+         unsigned short oc = opcode & MASK_000F;
+         log("last_nibble", oc);
+         int X = extractSecNibble(oc);
+         rtn = processType8(oc, X);
+         break;
+      }
+      // Skips the next instruction if VX doesn't equal VY.
+      // (Usually the next instruction is a jump to skip a code block)
+      case TYPE_9:{ // 9XY0
+         int X = extractSecNibble(opcode_type);
+         int Y = extractThirdNibble(opcode_type);
+         if(V[X] != V[Y]){
+            progCounter += COEFF_OF_4;
+         }
+         else{
+            progCounter += COEFF_OF_2;
+         }
+         break;
+      }
+      case TYPE_A:{    // ANNN - Sets I to the address NNN.
+
+         break;
       }
       case TYPE_B:{    // Jumps to the address NNN plus V0.
-               break;
+         break;
       }
       case TYPE_C:{    // Sets VX to the result of a bitwise and operation on a random number (Typically: 0 to 255) and NN.
-               break;
+         break;
       }
          /*
           * Draws a sprite at coordinate (VX, VY) that has a width of 8 pixels and a height of N pixels.
@@ -241,7 +261,7 @@ bool Chip8::runEmulator(){
           * when the sprite is drawn, and to 0 if that doesn’t happen
           */
       case TYPE_D:{
-               break;
+          break;
       }
       case TYPE_E:{               // KeyOp
          unsigned short oc = opcode & MASK_00FF;
@@ -298,6 +318,47 @@ bool Chip8::processType0(unsigned short opcode_internal_type){
       }
    }
    return rtn;
+}
+
+/*
+ * Process type 8 opcodes
+ */
+bool Chip8::processType8(unsigned short oc, int X){
+   bool rtn = true;
+   switch (oc) {
+      case COEFF_OF_0:{  // 8XY0: sets VX to the value of VY
+         break;
+      }
+      case COEFF_OF_1:{  // 8XY1: Sets VX to VX or VY. (Bitwise OR operation) VF is reset to 0.
+         break;
+      }
+      case COEFF_OF_2:{  // 8XY2: Sets VX to VX and VY. (Bitwise AND operation) VF is reset to 0.
+         break;
+      }
+      case COEFF_OF_3:{  // 8XY3: Sets VX to VX xor VY. VF is reset to 0.
+         break;
+      }
+      case COEFF_OF_4:{  // 8XY4: Adds VY to VX. VF is set to 1 when there's a carry, and to 0 when there isn't.
+         break;
+      }
+      case COEFF_OF_5:{  // 8XY5: VY is subtracted from VX. VF is set to 0 when there's a borrow, and 1 when there isn't.
+         break;
+      }
+      case COEFF_OF_6:{  // 8XY6: Shifts VX right by one. VF is set to the value of the least significant bit of VX before the shift.
+         break;
+      }
+      case COEFF_OF_7:{  // 8XY7: Sets VX to VY minus VX. VF is set to 0 when there's a borrow, and 1 when there isn't.
+         break;
+      }
+      case COEFF_OF_E:{  // 8XYE: Shifts VX left by one. VF is set to the value of the most significant bit of VX before the shift.
+         break;
+      }
+      default:{
+         rtn = false;
+         log("value is invalid!", oc);
+         break;
+      }
+   }
 }
 
 /*
@@ -462,10 +523,22 @@ bool Chip8::processTypeF(unsigned short oc, int X){
  */
 int Chip8::extractSecNibble(unsigned short oc){
    /*
-    * To extract X, bitwise AND 0x0X07 with 0x0F00, shift 0x0X00 right
+    * To extract X, bitwise AND 0x0X07 with 0x0F00, shift 8 bits to the right
     */
    int x = oc & MASK_0F00;
    int x_shifted = x >> COEFF_OF_8;
+   return x_shifted;
+}
+
+/*
+ * Extract Third nibble
+ */
+int Chip8::extractThirdNibble(unsigned short oc){
+   /*
+    * To extract Y, bitwise AND 0x00XY with 0x00F0, shift 4 bits to the right
+    */
+   int x = oc & MASK_00F0;
+   int x_shifted = x >> COEFF_OF_4;
    return x_shifted;
 }
 

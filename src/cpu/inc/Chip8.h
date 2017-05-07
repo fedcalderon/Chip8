@@ -61,6 +61,7 @@
 // Inner opcode types
 #define MASK_0FFF            0x0FFF
 #define MASK_00FF            0x00FF
+#define MASK_00F0            0x00F0
 #define MASK_000F            0x000F
 #define MASK_0F00            0x0F00
 #define CLEAR_SCREEN         0x00E0
@@ -71,7 +72,7 @@
 #define IF_KEY_NOT_PRESSED   0x00A1
 #define AWAITED_KEY_PRESSED  0x000A
 #define DELAY_TIMER_TO_VX    0x0015
-#define SOUND_TIMER_TO_VX     0X0018
+#define SOUND_TIMER_TO_VX    0X0018
 #define ADD_VX_TO_I          0X001E
 #define SPRITE_LOCATION      0X0029
 #define BIN_CODED_DEC        0X0033
@@ -106,7 +107,10 @@ class Chip8 {
        * Extract second nibble
        */
       int extractSecNibble(unsigned short);
-
+      /*
+       * Extract third nibble
+       */
+      int extractThirdNibble(unsigned short);
    private:
       /*
        * Fontset definition. Memory position must be at 0x50 (80 decimal)
@@ -198,6 +202,10 @@ class Chip8 {
        * Process type 0 opcodes
        */
       bool processType0(unsigned short);
+      /*
+       * Process type 8 opcodes
+       */
+      bool processType8(unsigned short, int);
       /*
        * Process type E opcodes
        */
