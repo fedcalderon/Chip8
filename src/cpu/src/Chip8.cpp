@@ -172,8 +172,8 @@ bool Chip8::runEmulator(){
       // Skips the next instruction if VX equals NN.
       // (Usually the next instruction is a jump to skip a code block)
       case TYPE_3:{
-         int X = extractSecNibble(opcode_type);
-         int NN = opcode_type & MASK_00FF;
+         unsigned short X = extractSecNibble(opcode_type);
+         unsigned short NN = opcode_type & MASK_00FF;
          if(V[X] == NN){
             progCounter += COEFF_OF_4;
          }
@@ -185,8 +185,8 @@ bool Chip8::runEmulator(){
       // Skips the next instruction if VX doesn't equal NN.
       // (Usually the next instruction is a jump to skip a code block)
       case TYPE_4:{
-         int X = extractSecNibble(opcode_type);
-         int NN = opcode_type & MASK_00FF;
+         unsigned short X = extractSecNibble(opcode_type);
+         unsigned short NN = opcode_type & MASK_00FF;
          if(V[X] != NN){
             progCounter += COEFF_OF_4;
          }
@@ -198,8 +198,8 @@ bool Chip8::runEmulator(){
       // Skips the next instruction if VX equals VY.
       // (Usually the next instruction is a jump to skip a code block)
       case TYPE_5:{ // 5XY0
-         int X = extractSecNibble(opcode_type);
-         int Y = extractThirdNibble(opcode_type);
+         unsigned short X = extractSecNibble(opcode_type);
+         unsigned short Y = extractThirdNibble(opcode_type);
          if(V[X] == V[Y]){
             progCounter += COEFF_OF_4;
          }
@@ -209,15 +209,15 @@ bool Chip8::runEmulator(){
          break;
       }
       case TYPE_6:{   // 6XNN - Sets VX to NN.
-         int X = extractSecNibble(opcode_type);
-         int NN = opcode_type & MASK_00FF;
+         unsigned short X = extractSecNibble(opcode_type);
+         unsigned short NN = opcode_type & MASK_00FF;
          V[X] = NN;
          progCounter += COEFF_OF_2;
          break;
       }
       case TYPE_7:{   // 7XNN - Adds NN to VX.
-         int X = extractSecNibble(opcode_type);
-         int NN = opcode_type & MASK_00FF;
+         unsigned short X = extractSecNibble(opcode_type);
+         unsigned short NN = opcode_type & MASK_00FF;
          V[X] += NN;
          progCounter += COEFF_OF_2;
          break;
@@ -226,15 +226,15 @@ bool Chip8::runEmulator(){
          // Inner switch over last nibble to process internal options.
          unsigned short oc = opcode & MASK_000F;
          log("last_nibble", oc);
-         int X = extractSecNibble(oc);
+         unsigned short X = extractSecNibble(oc);
          rtn = processType8(oc, X);
          break;
       }
       // Skips the next instruction if VX doesn't equal VY.
       // (Usually the next instruction is a jump to skip a code block)
       case TYPE_9:{ // 9XY0
-         int X = extractSecNibble(opcode_type);
-         int Y = extractThirdNibble(opcode_type);
+         unsigned short X = extractSecNibble(opcode_type);
+         unsigned short Y = extractThirdNibble(opcode_type);
          if(V[X] != V[Y]){
             progCounter += COEFF_OF_4;
          }
@@ -244,13 +244,22 @@ bool Chip8::runEmulator(){
          break;
       }
       case TYPE_A:{    // ANNN - Sets I to the address NNN.
-
+         unsigned short NNN = opcode_type & MASK_0FFF;
+         indexReg = NNN;
+         progCounter += COEFF_OF_2;
          break;
       }
-      case TYPE_B:{    // Jumps to the address NNN plus V0.
+      case TYPE_B:{    // BNNN - Jumps to the address NNN plus V0.
+         unsigned short NNN = opcode_type & MASK_0FFF;
+         progCounter = NNN + V[0];
          break;
       }
-      case TYPE_C:{    // Sets VX to the result of a bitwise and operation on a random number (Typically: 0 to 255) and NN.
+      case TYPE_C:{    // CXNN - Sets VX to the result of a bitwise and operation on a random number (Typically: 0 to 255) and NN.
+         unsigned short X = extractSecNibble(opcode_type);
+         unsigned short NN = opcode_type & MASK_00FF;
+         unsigned short random = rand() % MASK_00FF;
+         V[X] = random & NN;
+         progCounter += COEFF_OF_2;
          break;
       }
          /*
@@ -260,7 +269,8 @@ bool Chip8::runEmulator(){
           * As described above, VF is set to 1 if any screen pixels are flipped from set to unset
           * when the sprite is drawn, and to 0 if that doesn’t happen
           */
-      case TYPE_D:{
+      case TYPE_D:{ // DXYN
+
           break;
       }
       case TYPE_E:{               // KeyOp
