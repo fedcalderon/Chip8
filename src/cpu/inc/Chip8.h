@@ -21,6 +21,7 @@
 #define STACK_SIZE           16
 #define APP_START_ADDR       0x200    // 512
 #define OVERFLOW_LIMIT       0xFFF
+#define CARRY_LIMIT          0xFF
 
 #define COEFF_OF_0           0x0000
 #define COEFF_OF_1           0x0001
@@ -65,6 +66,7 @@
 #define MASK_000F            0x000F
 #define MASK_0F00            0x0F00
 #define MASK_80              0x80
+#define MASK_1               0x1
 
 #define CLEAR_SCREEN         0x00E0
 #define RTN_SUBROUTINE       0x00EE
@@ -207,7 +209,11 @@ class Chip8 {
       /*
        * Process type 8 opcodes
        */
-      bool processType8(unsigned short, int);
+      bool processType8(unsigned short, int, int);
+      /*
+       * Process type D opcodes
+       */
+      bool processTypeD(unsigned short);
       /*
        * Process type E opcodes
        */

@@ -136,7 +136,6 @@ bool Chip8::runEmulator(){
     * 3. Once in a valid case, process the opcode.
     */
    unsigned short opcode_type = opcode & OPCODE_OUTER_MASK;
-   log("opcode_type", opcode_type);
 
    // Outer switch to control the types of opcodes
    switch (opcode_type) {
@@ -144,7 +143,6 @@ bool Chip8::runEmulator(){
       // Display and flow
       case TYPE_0:{  // 0x0000
          unsigned short opcode_internal_type = opcode_type & OPCODE_INNER_MASK;
-         log("opcode_internal_type", opcode_internal_type);
          rtn = processType0(opcode_internal_type);
          break;
       }
@@ -154,7 +152,6 @@ bool Chip8::runEmulator(){
          int address = opcode_type & MASK_0FFF;
          // Set program counter to address
          progCounter = address;
-         log("Jumping to address: ", address);
          break;
       }
       // Calls subroutine at NNN.
@@ -165,8 +162,6 @@ bool Chip8::runEmulator(){
          stack_pointer++;
          // Set program counter to address NNN decoded from opcode
          progCounter = opcode_type & MASK_0FFF;
-         log("Calling ", progCounter);
-         log("From ", stack[stack_pointer - COEFF_OF_1]);
          break;
       }
       // Skips the next instruction if VX equals NN.
@@ -208,26 +203,29 @@ bool Chip8::runEmulator(){
          }
          break;
       }
-      case TYPE_6:{   // 6XNN - Sets VX to NN.
+      // 6XNN - Sets VX to NN.
+      case TYPE_6:{
          unsigned short X = extractSecNibble(opcode_type);
          unsigned short NN = opcode_type & MASK_00FF;
          V[X] = NN;
          progCounter += COEFF_OF_2;
          break;
       }
-      case TYPE_7:{   // 7XNN - Adds NN to VX.
+      // 7XNN - Adds NN to VX.
+      case TYPE_7:{
          unsigned short X = extractSecNibble(opcode_type);
          unsigned short NN = opcode_type & MASK_00FF;
          V[X] += NN;
          progCounter += COEFF_OF_2;
          break;
       }
-      case TYPE_8:{   // Math operations
+      // Math operations
+      case TYPE_8:{
          // Inner switch over last nibble to process internal options.
          unsigned short oc = opcode & MASK_000F;
-         log("last_nibble", oc);
-         unsigned short X = extractSecNibble(oc);
-         rtn = processType8(oc, X);
+         unsigned short X = extractSecNibble(opcode_type);
+         unsigned short Y = extractThirdNibble(opcode_type);
+         rtn = processType8(oc, X, Y);
          break;
       }
       // Skips the next instruction if VX doesn't equal VY.
@@ -243,18 +241,21 @@ bool Chip8::runEmulator(){
          }
          break;
       }
-      case TYPE_A:{    // ANNN - Sets I to the address NNN.
+      // ANNN - Sets I to the address NNN.
+      case TYPE_A:{
          unsigned short NNN = opcode_type & MASK_0FFF;
          indexReg = NNN;
          progCounter += COEFF_OF_2;
          break;
       }
-      case TYPE_B:{    // BNNN - Jumps to the address NNN plus V0.
+      // BNNN - Jumps to the address NNN plus V0.
+      case TYPE_B:{
          unsigned short NNN = opcode_type & MASK_0FFF;
          progCounter = NNN + V[0];
          break;
       }
-      case TYPE_C:{    // CXNN - Sets VX to the result of a bitwise and operation on a random number (Typically: 0 to 255) and NN.
+      // CXNN - Sets VX to the result of a bitwise and operation on a random number (Typically: 0 to 255) and NN.
+      case TYPE_C:{
          unsigned short X = extractSecNibble(opcode_type);
          unsigned short NN = opcode_type & MASK_00FF;
          unsigned short random = rand() % MASK_00FF;
@@ -270,33 +271,7 @@ bool Chip8::runEmulator(){
           * when the sprite is drawn, and to 0 if that doesn’t happen
           */
       case TYPE_D:{ // DXYN
-         unsigned short X = extractSecNibble(opcode_type);
-         unsigned short Y = extractThirdNibble(opcode_type);
-         unsigned short N = opcode_type & MASK_000F;
-         V[ADDR_F] = COEFF_OF_0;
-
-         // Outer loop controls y-coordinate from 0 to height N
-         for (int yCoord = 0; yCoord < N; yCoord++) {
-            int line = memory[indexReg + yCoord];
-
-            // Inner loop controls x-coordinate from 0 to 7, 8 pixels wide
-            for(int xCoord = 0; xCoord < COEFF_OF_8; xCoord++){
-               unsigned short shifting_mask = 0b10000000 >> xCoord;
-               int pixel = line & shifting_mask;
-               if(pixel != 0){
-                  int totalDrawX = (X + xCoord) % DISP_HOR;
-                  int totalDrawY = (Y + yCoord) % DISP_VER;
-                  int index = (totalDrawY * DISP_HOR) + totalDrawX;
-                  if(display[index] == 1){
-                     V[ADDR_F] = COEFF_OF_1;
-                  }
-                  // As the shifting mask determines the value of pixel,
-                  // set the new value of display[index] as bitwise exclusive OR until pixel
-                  // is zero. Then, move to the next y-coordinate
-                  display[index] = display[index] ^ COEFF_OF_1;
-               }
-            }
-         }
+         rtn = processTypeD(opcode_type);
          progCounter += COEFF_OF_2;
          repaint = true;
          break;
@@ -313,13 +288,13 @@ bool Chip8::runEmulator(){
        */
       case TYPE_F:{
          unsigned short oc = opcode & MASK_00FF;
-         log("lastbyte", oc);
          int X = extractSecNibble(oc);
          rtn = processTypeF(oc, X);
          break;
       }
 
       default:{
+         rtn = false;
          break;
       }
    }
@@ -361,34 +336,72 @@ bool Chip8::processType0(unsigned short opcode_internal_type){
 /*
  * Process type 8 opcodes
  */
-bool Chip8::processType8(unsigned short oc, int X){
+bool Chip8::processType8(unsigned short oc, int X, int Y){
    bool rtn = true;
    switch (oc) {
-      case COEFF_OF_0:{  // 8XY0: sets VX to the value of VY
+      // 8XY0: sets VX to the value of VY
+      case COEFF_OF_0:{
+         V[X] = V[Y];
          break;
       }
-      case COEFF_OF_1:{  // 8XY1: Sets VX to VX or VY. (Bitwise OR operation) VF is reset to 0.
+      // 8XY1: Sets VX to VX or VY. (Bitwise OR operation) VF is reset to 0.
+      case COEFF_OF_1:{
+         V[X] = V[X] | V[Y];
          break;
       }
-      case COEFF_OF_2:{  // 8XY2: Sets VX to VX and VY. (Bitwise AND operation) VF is reset to 0.
+      // 8XY2: Sets VX to VX and VY. (Bitwise AND operation) VF is reset to 0.
+      case COEFF_OF_2:{
+         V[X] = V[X] & V[Y];
          break;
       }
-      case COEFF_OF_3:{  // 8XY3: Sets VX to VX xor VY. VF is reset to 0.
+      // 8XY3: Sets VX to VX xor VY. VF is reset to 0.
+      case COEFF_OF_3:{
+         V[X] = V[X] ^ V[Y];
          break;
       }
-      case COEFF_OF_4:{  // 8XY4: Adds VY to VX. VF is set to 1 when there's a carry, and to 0 when there isn't.
+      // 8XY4: Adds VY to VX. VF is set to 1 when there's a carry, and to 0 when there isn't.
+      case COEFF_OF_4:{
+         V[X] += V[Y];
+         if(V[Y] > (CARRY_LIMIT - V[X])){
+            V[ADDR_F] = COEFF_OF_1; // carry
+         }
+         else {
+            V[ADDR_F] = COEFF_OF_0; // no carry
+         }
          break;
       }
-      case COEFF_OF_5:{  // 8XY5: VY is subtracted from VX. VF is set to 0 when there's a borrow, and 1 when there isn't.
+      // 8XY5: VY is subtracted from VX. VF is set to 0 when there's a borrow, and 1 when there isn't.
+      case COEFF_OF_5:{
+         V[X] -= V[Y];
+         if(V[X] > V[Y]){
+            V[ADDR_F] = COEFF_OF_1; // no borrow
+         }
+         else {
+            V[ADDR_F] = COEFF_OF_0; // borrow
+         }
          break;
       }
-      case COEFF_OF_6:{  // 8XY6: Shifts VX right by one. VF is set to the value of the least significant bit of VX before the shift.
+      // 8XY6: Shifts VX right by one. VF is set to the value of the least significant bit of VX before the shift.
+      case COEFF_OF_6:{
+         V[ADDR_F] = V[X] & MASK_1;
+         V[X] = V[X] >> COEFF_OF_1;
          break;
       }
-      case COEFF_OF_7:{  // 8XY7: Sets VX to VY minus VX. VF is set to 0 when there's a borrow, and 1 when there isn't.
+      // 8XY7: Sets VX to VY minus VX. VF is set to 0 when there's a borrow, and 1 when there isn't.
+      case COEFF_OF_7:{
+         V[X] = V[Y] - V[X];
+         if(V[X] > V[Y]){
+            V[ADDR_F] = COEFF_OF_1; // no borrow
+         }
+         else {
+            V[ADDR_F] = COEFF_OF_0; // borrow
+         }
          break;
       }
-      case COEFF_OF_E:{  // 8XYE: Shifts VX left by one. VF is set to the value of the most significant bit of VX before the shift.
+      // 8XYE: Shifts VX left by one. VF is set to the value of the most significant bit of VX before the shift.
+      case COEFF_OF_E:{
+         V[ADDR_F] = V[X] & MASK_80;
+         V[X] = V[X] << COEFF_OF_1;
          break;
       }
       default:{
@@ -397,6 +410,46 @@ bool Chip8::processType8(unsigned short oc, int X){
          break;
       }
    }
+
+   // Program counter is always incremented by 2 bytes after each opcode execution
+   progCounter += COEFF_OF_2;
+   return rtn;
+}
+
+/*
+ * Process type D opcodes
+ */
+bool Chip8::processTypeD(unsigned short opcode_type){
+   bool rtn = true;
+   unsigned short X = extractSecNibble(opcode_type);
+   unsigned short Y = extractThirdNibble(opcode_type);
+   unsigned short N = opcode_type & MASK_000F;
+   V[ADDR_F] = COEFF_OF_0;
+
+            // Outer loop controls y-coordinate from 0 to height N
+            for (int yCoord = 0; yCoord < N; yCoord++) {
+               int line = memory[indexReg + yCoord];
+
+               // Inner loop controls x-coordinate from 0 to 7, 8 pixels wide
+               for(int xCoord = 0; xCoord < COEFF_OF_8; xCoord++){
+                  unsigned short shifting_mask = 0b10000000 >> xCoord;
+                  int pixel = line & shifting_mask;
+                  if(pixel != 0){
+                     int totalDrawX = (X + xCoord) % DISP_HOR;
+                     int totalDrawY = (Y + yCoord) % DISP_VER;
+                     int index = (totalDrawY * DISP_HOR) + totalDrawX;
+                     if(display[index] == 1){
+                        V[ADDR_F] = COEFF_OF_1;
+                     }
+                     // As the shifting mask determines the value of pixel,
+                     // set the new value of display[index] as bitwise exclusive OR until pixel
+                     // is zero. Then, move to the next y-coordinate
+                     display[index] = display[index] ^ COEFF_OF_1;
+                  }
+               }
+            }
+
+   return rtn;
 }
 
 /*
@@ -416,7 +469,6 @@ bool Chip8::processTypeE(unsigned short oc, int X){
          else {
             progCounter += COEFF_OF_2;
          }
-         printf("Skipping next instruction if V[%d] = %d is pressed", (int)X, (int)V[X]);
          break;
       }
       // Skips the next instruction if the key stored in VX isn't pressed.
@@ -429,12 +481,10 @@ bool Chip8::processTypeE(unsigned short oc, int X){
          else {
             progCounter += COEFF_OF_2;
          }
-         printf("Skipping next instruction if V[%d] = %d is not pressed", (int)X, (int)V[X]);
          break;
       }
       default:{
          rtn = false;
-         log("value is invalid!", oc);
          break;
       }
    }
@@ -449,39 +499,34 @@ bool Chip8::processTypeF(unsigned short oc, int X){
    bool rtn = true;
 
    switch (oc) {
-      case TYPE_TIMER:{   // 0xFX07 - Sets VX to the value of the delay timer.
+      // 0xFX07 - Sets VX to the value of the delay timer.
+      case TYPE_TIMER:{
          V[X] = delay_timer;
-         std::string msg ("V[%s] = ", X);
-         log(msg, delay_timer);
          break;
       }
-      case AWAITED_KEY_PRESSED: { // 0x000A - A key press is awaited, and then stored in VX. (Blocking Operation. All instruction halted until next key event)
+      // 0x000A - A key press is awaited, and then stored in VX.
+      // (Blocking Operation. All instruction halted until next key event)
+      case AWAITED_KEY_PRESSED: {
          for (int i = 0; i < NUM_KEYS; i++) {
             if (keys[i] == COEFF_OF_1) {
                V[X] = i;
-               progCounter += COEFF_OF_2;
                break;
             }
          }
-         std::string msg ("key stored in V[X] = ");
-         log(msg, V[X]);
          break;
       }
-      case DELAY_TIMER_TO_VX:{   // 0x0015 - Sets the delay timer to VX.
+      // 0x0015 - Sets the delay timer to VX.
+      case DELAY_TIMER_TO_VX:{
          delay_timer = V[X];
-         progCounter += COEFF_OF_2;
-         std::string msg ("delay timer is set to V[X] = ");
-         log(msg, V[X]);
          break;
       }
-      case SOUND_TIMER_TO_VX:{   // 0X0018 - Sets the sound timer to VX.
+      // 0X0018 - Sets the sound timer to VX.
+      case SOUND_TIMER_TO_VX:{
          sound_timer = V[X];
-         progCounter += COEFF_OF_2;
-         std::string msg ("sound timer is set to V[X] = ");
-         log(msg, V[X]);
          break;
       }
-      case ADD_VX_TO_I:{   // 0X001E - Adds VX to I.
+      // 0X001E - Adds VX to I.
+      case ADD_VX_TO_I:{
          // VF is set to 1 when there is a range overflow (I+VX>0xFFF), and to 0 when there isn't.
          // This is an undocumented feature of the CHIP-8 and used by the Spacefight 2091! game.
          if((indexReg + V[X]) > OVERFLOW_LIMIT){
@@ -491,9 +536,6 @@ bool Chip8::processTypeF(unsigned short oc, int X){
             V[ADDR_F] = COEFF_OF_0;
          }
          indexReg += V[X];
-         progCounter += COEFF_OF_2;
-         std::string msg ("sound timer is set to V[X] = ");
-         log(msg, V[X]);
          break;
       }
       // Sets I to the location of the sprite for the character in VX. Characters 0-F (in hexadecimal)
@@ -501,9 +543,6 @@ bool Chip8::processTypeF(unsigned short oc, int X){
       case SPRITE_LOCATION:{   // 0X0029
          int character_pixel = V[X];
          indexReg = 0x050 + (character_pixel * 5);
-         progCounter += COEFF_OF_2;
-         std::string msg ("set index register I to V[%d] = %d, offset to 0x", X, V[X]);
-         log(msg, indexReg);
          break;
       }
       /*
@@ -524,27 +563,21 @@ bool Chip8::processTypeF(unsigned short oc, int X){
          memory[indexReg] = hundreds;
          memory[indexReg + COEFF_OF_1] = tens;
          memory[indexReg + COEFF_OF_2] = n;
-         progCounter += COEFF_OF_2;
-         std::string msg ("binary coded decimal V[%d] = %d, offset to 0x");
-         log(msg, indexReg);
          break;
       }
-      case V0_TO_VX:{   // 0X0055 - Stores V0 to VX (including VX) in memory starting at address I.
+      // 0X0055 - Stores V0 to VX (including VX) in memory starting at address I.
+      case V0_TO_VX:{
          for(int i = 0; i <= X; i++){
             memory[indexReg + i] = V[i];
          }
-         progCounter += COEFF_OF_2;
-         std::string msg ("storing in memory[%d] = V[0] to V[%d]", indexReg, X);
-         log(msg, 0);
          break;
       }
-      case FILL_V0_TO_VX:{   // Fills V0 to VX (including VX) with values from memory starting at address I.
+      // Fills V0 to VX (including VX) with values from memory starting at address I.
+      case FILL_V0_TO_VX:{
          for(int i = 0; i <= X; i++){
             V[i] = memory[indexReg + i];
          }
-         progCounter += COEFF_OF_2;
          indexReg += (X + COEFF_OF_1);
-
          break;
       }
       default:{
@@ -553,6 +586,9 @@ bool Chip8::processTypeF(unsigned short oc, int X){
          break;
       }
    }
+
+   // Program counter is always incremented by 2 bytes after each opcode execution
+   progCounter += COEFF_OF_2;
    return rtn;
 }
 
