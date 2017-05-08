@@ -270,10 +270,38 @@ bool Chip8::runEmulator(){
           * when the sprite is drawn, and to 0 if that doesn’t happen
           */
       case TYPE_D:{ // DXYN
+         unsigned short X = extractSecNibble(opcode_type);
+         unsigned short Y = extractThirdNibble(opcode_type);
+         unsigned short N = opcode_type & MASK_000F;
+         V[ADDR_F] = COEFF_OF_0;
 
-          break;
+         // Outer loop controls y-coordinate from 0 to height N
+         for (int yCoord = 0; yCoord < N; yCoord++) {
+            int line = memory[indexReg + yCoord];
+
+            // Inner loop controls x-coordinate from 0 to 7, 8 pixels wide
+            for(int xCoord = 0; xCoord < COEFF_OF_8; xCoord++){
+               unsigned short shifting_mask = 0b10000000 >> xCoord;
+               int pixel = line & shifting_mask;
+               if(pixel != 0){
+                  int totalDrawX = (X + xCoord) % DISP_HOR;
+                  int totalDrawY = (Y + yCoord) % DISP_VER;
+                  int index = (totalDrawY * DISP_HOR) + totalDrawX;
+                  if(display[index] == 1){
+                     V[ADDR_F] = COEFF_OF_1;
+                  }
+                  // As the shifting mask determines the value of pixel,
+                  // set the new value of display[index] as bitwise exclusive OR until pixel
+                  // is zero. Then, move to the next y-coordinate
+                  display[index] = display[index] ^ COEFF_OF_1;
+               }
+            }
+         }
+         progCounter += COEFF_OF_2;
+         repaint = true;
+         break;
       }
-      case TYPE_E:{               // KeyOp
+      case TYPE_E:{  // KeyOp
          unsigned short oc = opcode & MASK_00FF;
          log("last_byte", oc);
          int X = extractSecNibble(oc);

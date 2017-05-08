@@ -64,6 +64,8 @@
 #define MASK_00F0            0x00F0
 #define MASK_000F            0x000F
 #define MASK_0F00            0x0F00
+#define MASK_80              0x80
+
 #define CLEAR_SCREEN         0x00E0
 #define RTN_SUBROUTINE       0x00EE
 #define TYPE_TIMER           0x0007
