@@ -87,7 +87,7 @@
 #define READ_MODE          "r"
 
 // String constants
-#define TEST_APP           "C:\\Users\\fedcalderon\\workspace\\Chip8\\Apps\\pong2.c8"
+#define TEST_APP           "C:\\Users\\fedcalderon\\workspace\\Chip8\\Apps\\tetris.c8"
 
 class Chip8 {
    public:
@@ -115,6 +115,7 @@ class Chip8 {
        * Extract third nibble
        */
       int extractThirdNibble(unsigned short);
+      char *readFile(char *fileName);
    private:
       /*
        * Fontset definition. Memory position must be at 0x50 (80 decimal)
