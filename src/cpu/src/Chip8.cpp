@@ -76,7 +76,7 @@ bool Chip8::loadApp(const char *file) {
    if (fileSize < allocated_space) {
       for (int i = 0; i < fileSize; i++) {
          memory[APP_START_ADDR + i] = (char) buff[i];
-         log("", memory[APP_START_ADDR + i]);
+//         log("", memory[APP_START_ADDR + i]);
       }
    }
    else {
@@ -132,6 +132,7 @@ bool Chip8::runEmulator() {
     * 3. Once in a valid case, process the opcode.
     */
    unsigned short opcode_type = opcode & OPCODE_OUTER_MASK;
+   log("opcode type", opcode_type);
 
    // Outer switch to control the types of opcodes
    switch (opcode_type) {
@@ -139,6 +140,7 @@ bool Chip8::runEmulator() {
       // Display and flow
       case TYPE_0: {  // 0x0000
          unsigned short opcode_internal_type = opcode & OPCODE_INNER_MASK;
+         log("opcode_internal_type", opcode_internal_type);
          rtn = processType0(opcode_internal_type);
          break;
       }
@@ -146,6 +148,7 @@ bool Chip8::runEmulator() {
       case TYPE_1: { // 0x1000
          // Get address by bitwise AND opcode with 0x0FFF
          int address = opcode & MASK_0FFF;
+         log("Set program counter to address", address);
          // Set program counter to address
          progCounter = address;
          break;
@@ -154,10 +157,12 @@ bool Chip8::runEmulator() {
       case TYPE_2: { // 0x2000
          // Save address in the stack
          stack[stack_pointer] = progCounter;
+         log("stack[stack_pointer] = progCounter", progCounter);
          // Point to the next item in the stack
          stack_pointer++;
          // Set program counter to address NNN decoded from opcode
          progCounter = opcode & MASK_0FFF;
+         log("Set program counter to address", progCounter);
          break;
       }
          // Skips the next instruction if VX equals NN.
@@ -171,6 +176,9 @@ bool Chip8::runEmulator() {
          else {
             progCounter += COEFF_OF_2;
          }
+         log("X", X);
+         log("NN", NN);
+         log("Program counter", progCounter);
          break;
       }
          // Skips the next instruction if VX doesn't equal NN.
@@ -184,6 +192,9 @@ bool Chip8::runEmulator() {
          else {
             progCounter += COEFF_OF_2;
          }
+         log("X", X);
+         log("NN", NN);
+         log("Program counter", progCounter);
          break;
       }
          // Skips the next instruction if VX equals VY.
@@ -197,6 +208,9 @@ bool Chip8::runEmulator() {
          else {
             progCounter += COEFF_OF_2;
          }
+         log("X", X);
+         log("Y", Y);
+         log("Program counter", progCounter);
          break;
       }
          // 6XNN - Sets VX to NN.
@@ -205,6 +219,10 @@ bool Chip8::runEmulator() {
          unsigned short NN = opcode & MASK_00FF;
          V[X] = NN;
          progCounter += COEFF_OF_2;
+
+         log("X", X);
+         log("NN", NN);
+         log("Program counter", progCounter);
          break;
       }
          // 7XNN - Adds NN to VX.
@@ -213,6 +231,11 @@ bool Chip8::runEmulator() {
          unsigned short NN = opcode & MASK_00FF;
          V[X] += NN;
          progCounter += COEFF_OF_2;
+
+         log("X", X);
+         log("NN", NN);
+         log("V[X]", V[X]);
+         log("Program counter", progCounter);
          break;
       }
          // Math operations
@@ -221,6 +244,10 @@ bool Chip8::runEmulator() {
          unsigned short oc = opcode & MASK_000F;
          unsigned short X = extractSecNibble(opcode);
          unsigned short Y = extractThirdNibble(opcode);
+         log("X", X);
+         log("Y", Y);
+         log("opcode & 000F", oc);
+
          rtn = processType8(oc, X, Y);
          break;
       }
@@ -235,6 +262,12 @@ bool Chip8::runEmulator() {
          else {
             progCounter += COEFF_OF_2;
          }
+
+         log("X", X);
+         log("Y", Y);
+         log("V[X]", V[X]);
+         log("V[Y]", V[Y]);
+         log("Program counter", progCounter);
          break;
       }
          // ANNN - Sets I to the address NNN.
@@ -242,12 +275,19 @@ bool Chip8::runEmulator() {
          unsigned short NNN = opcode & MASK_0FFF;
          indexReg = NNN;
          progCounter += COEFF_OF_2;
+
+         log("index register", NNN);
+         log("Program counter", progCounter);
          break;
       }
          // BNNN - Jumps to the address NNN plus V0.
       case TYPE_B: {
          unsigned short NNN = opcode & MASK_0FFF;
          progCounter = NNN + V[0];
+
+         log("NNN", NNN);
+         log("V[0]", V[0]);
+         log("Program counter", progCounter);
          break;
       }
          // CXNN - Sets VX to the result of a bitwise and operation on a random number (Typically: 0 to 255) and NN.
@@ -257,6 +297,11 @@ bool Chip8::runEmulator() {
          unsigned short random = rand() % MASK_00FF;
          V[X] = random & NN;
          progCounter += COEFF_OF_2;
+
+         log("X", X);
+         log("NN", NN);
+         log("random", random);
+         log("Program counter", progCounter);
          break;
       }
          /*
@@ -270,6 +315,8 @@ bool Chip8::runEmulator() {
          rtn = processTypeD(opcode);
          progCounter += COEFF_OF_2;
          repaint = true;
+
+         log("Program counter", progCounter);
          break;
       }
       case TYPE_E: {  // KeyOp
@@ -277,6 +324,10 @@ bool Chip8::runEmulator() {
          log("last_byte", oc);
          int X = extractSecNibble(oc);
          rtn = processTypeE(oc, X);
+
+         log("opcode & 00FF", oc);
+         log("X", X);
+         log("Program counter", progCounter);
          break;
       }
          /*
@@ -286,6 +337,10 @@ bool Chip8::runEmulator() {
          unsigned short oc = opcode & MASK_00FF;
          int X = extractSecNibble(oc);
          rtn = processTypeF(oc, X);
+
+         log("X", X);
+         log("opcode & 00FF", oc);
+         log("Program counter", progCounter);
          break;
       }
 
@@ -311,6 +366,8 @@ bool Chip8::processType0(unsigned short opcode_internal_type) {
          // Advance program counter by 2 bytes
          progCounter += COEFF_OF_2;
          repaint = true;
+
+         log("Program counter", progCounter);
          break;
       }
       case RTN_SUBROUTINE: { // 00EE: Returns from a subroutine.
@@ -318,6 +375,10 @@ bool Chip8::processType0(unsigned short opcode_internal_type) {
          stack_pointer--;
          progCounter = stack[stack_pointer + COEFF_OF_2];
          progCounter += COEFF_OF_2;
+
+         log("stack pointer", stack_pointer);
+         log("stack[stack_pointer + 2]", stack[stack_pointer + COEFF_OF_2]);
+         log("Program counter", progCounter);
          break;
       }
       default: {
@@ -338,21 +399,29 @@ bool Chip8::processType8(unsigned short oc, int X, int Y) {
       // 8XY0: sets VX to the value of VY
       case COEFF_OF_0: {
          V[X] = V[Y];
+
+         log("8XY0: V[X]", V[X]);
          break;
       }
          // 8XY1: Sets VX to VX or VY. (Bitwise OR operation) VF is reset to 0.
       case COEFF_OF_1: {
          V[X] = V[X] | V[Y];
+
+         log("8XY1: V[X] bitwise OR V[Y]", V[X]);
          break;
       }
          // 8XY2: Sets VX to VX and VY. (Bitwise AND operation) VF is reset to 0.
       case COEFF_OF_2: {
          V[X] = V[X] & V[Y];
+
+         log("8XY2: V[X] bitwise AND V[Y]", V[X]);
          break;
       }
          // 8XY3: Sets VX to VX xor VY. VF is reset to 0.
       case COEFF_OF_3: {
          V[X] = V[X] ^ V[Y];
+
+         log("8XY1: V[X] bitwise XOR V[Y]", V[X]);
          break;
       }
          // 8XY4: Adds VY to VX. VF is set to 1 when there's a carry, and to 0 when there isn't.
@@ -360,10 +429,14 @@ bool Chip8::processType8(unsigned short oc, int X, int Y) {
          V[X] += V[Y];
          if (V[Y] > (CARRY_LIMIT - V[X])) {
             V[ADDR_F] = COEFF_OF_1; // carry
+            cout << "carry" << endl;
          }
          else {
             V[ADDR_F] = COEFF_OF_0; // no carry
+            cout << "no carry" << endl;
          }
+
+         log("8XY4: V[X] + V[Y]", V[X]);
          break;
       }
          // 8XY5: VY is subtracted from VX. VF is set to 0 when there's a borrow, and 1 when there isn't.
@@ -371,16 +444,23 @@ bool Chip8::processType8(unsigned short oc, int X, int Y) {
          V[X] -= V[Y];
          if (V[X] > V[Y]) {
             V[ADDR_F] = COEFF_OF_1; // no borrow
+            cout << "no borrow" << endl;
          }
          else {
             V[ADDR_F] = COEFF_OF_0; // borrow
+            cout << "borrow" << endl;
          }
+
+         log("8XY5: V[X] - V[Y]", V[X]);
          break;
       }
          // 8XY6: Shifts VX right by one. VF is set to the value of the least significant bit of VX before the shift.
       case COEFF_OF_6: {
          V[ADDR_F] = V[X] & MASK_1;
          V[X] = V[X] >> COEFF_OF_1;
+
+         log("8XY6: V[F] bitwise AND 0x1", V[0xF]);
+         log("8XY6: V[X] >> 1", V[X]);
          break;
       }
          // 8XY7: Sets VX to VY minus VX. VF is set to 0 when there's a borrow, and 1 when there isn't.
@@ -388,16 +468,23 @@ bool Chip8::processType8(unsigned short oc, int X, int Y) {
          V[X] = V[Y] - V[X];
          if (V[X] > V[Y]) {
             V[ADDR_F] = COEFF_OF_1; // no borrow
+            cout << "no borrow" << endl;
          }
          else {
             V[ADDR_F] = COEFF_OF_0; // borrow
+            cout << "borrow" << endl;
          }
+
+         log("8XY7: V[Y] - V[X]", V[X]);
          break;
       }
          // 8XYE: Shifts VX left by one. VF is set to the value of the most significant bit of VX before the shift.
       case COEFF_OF_E: {
          V[ADDR_F] = V[X] & MASK_80;
          V[X] = V[X] << COEFF_OF_1;
+
+         log("8XYE: V[F] bitwise AND 0x80", V[0xF]);
+         log("8XYE: V[X] << 1", V[X]);
          break;
       }
       default: {
@@ -421,6 +508,10 @@ bool Chip8::processTypeD(unsigned short opcode_type) {
    unsigned short Y = extractThirdNibble(opcode_type);
    unsigned short N = opcode_type & MASK_000F;
    V[ADDR_F] = COEFF_OF_0;
+
+   log("type D: X", X);
+   log("type D: Y", Y);
+   log("type D: N", N);
 
    // Outer loop controls y-coordinate from 0 to height N
    for (int yCoord = 0; yCoord < N; yCoord++) {
@@ -461,9 +552,11 @@ bool Chip8::processTypeE(unsigned short oc, int X) {
          int key = V[X];
          if (keys[key] == COEFF_OF_1) {
             progCounter += COEFF_OF_4;
+            cout << "key pressed" << endl;
          }
          else {
             progCounter += COEFF_OF_2;
+            cout << "key not pressed" << endl;
          }
          break;
       }
@@ -473,9 +566,11 @@ bool Chip8::processTypeE(unsigned short oc, int X) {
          int key = V[X];
          if (keys[key] == COEFF_OF_0) {
             progCounter += COEFF_OF_4;
+            cout << "key not pressed" << endl;
          }
          else {
             progCounter += COEFF_OF_2;
+            cout << "key pressed" << endl;
          }
          break;
       }
@@ -498,6 +593,8 @@ bool Chip8::processTypeF(unsigned short oc, int X) {
       // 0xFX07 - Sets VX to the value of the delay timer.
       case TYPE_TIMER: {
          V[X] = delay_timer;
+
+         log("V[X] = delay timer", V[X]);
          break;
       }
          // 0x000A - A key press is awaited, and then stored in VX.
@@ -616,6 +713,6 @@ int Chip8::extractThirdNibble(unsigned short oc) {
  * Print messages to the console for debugging
  */
 void Chip8::log(std::string type, unsigned short n) {
-   cout << std::showbase << std::hex;
-   cout << type << " = " << std::uppercase << n << endl;
+   cout << std::showbase << std::hex << type << " : " << std::uppercase << n << endl;
+   //cout << type << " = " << std::uppercase << n << endl;
 }

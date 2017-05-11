@@ -14,25 +14,6 @@ using namespace std;
 
 Chip8 chip8;
 
-void testOpcodes();
-void testType0();
-void testType1();
-void testType2();
-void testType3();
-void testType4();
-void testType5();
-void testType6();
-void testType7();
-void testType8();
-void testType9();
-void testTypeA();
-void testTypeB();
-void testTypeC();
-void testTypeD();
-void testTypeE();
-void testTypeF();
-
-
 int main(int argc, char **argv){
    cout << "Entering Chip8 main() ... " << endl;
 
@@ -53,71 +34,3 @@ int main(int argc, char **argv){
 
    return rtn;
 }
-
-void testOpcodes(){
-   testType0();
-   testType1();
-   testType2();
-   testType3();
-   testType4();
-   testType5();
-   testType6();
-   testType7();
-   testType8();
-   testType9();
-   testTypeA();
-   testTypeB();
-   testTypeC();
-   testTypeD();
-   testTypeE();
-   testTypeF();
-}
-void testType0(){
-
-}
-void testType1(){
-
-}
-void testType2(){
-
-}
-void testType3(){
-
-}
-void testType4(){
-
-}
-void testType5(){
-
-}
-void testType6(){
-
-}
-void testType7(){
-
-}
-void testType8(){
-
-}
-void testType9(){
-
-}
-void testTypeA(){
-
-}
-void testTypeB(){
-
-}
-void testTypeC(){
-
-}
-void testTypeD(){
-
-}
-void testTypeE(){
-
-}
-void testTypeF(){
-
-}
-
