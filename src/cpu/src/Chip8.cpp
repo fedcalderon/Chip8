@@ -594,15 +594,19 @@ bool Chip8::processTypeF(unsigned short oc, int X) {
       case TYPE_TIMER: {
          V[X] = delay_timer;
 
-         log("V[X] = delay timer", V[X]);
+         log("type FX07 -> V[X] = delay timer", V[X]);
          break;
       }
          // 0x000A - A key press is awaited, and then stored in VX.
          // (Blocking Operation. All instruction halted until next key event)
       case AWAITED_KEY_PRESSED: {
+         cout << "type FX0A -> key pressed" << endl;
          for (int i = 0; i < NUM_KEYS; i++) {
             if (keys[i] == COEFF_OF_1) {
                V[X] = i;
+
+               log("i", i);
+               log("V[X]", V[X]);
                break;
             }
          }
@@ -611,17 +615,22 @@ bool Chip8::processTypeF(unsigned short oc, int X) {
          // 0x0015 - Sets the delay timer to VX.
       case DELAY_TIMER_TO_VX: {
          delay_timer = V[X];
+
+         log("type FX15 -> delay_timer = V[X]", delay_timer);
          break;
       }
          // 0X0018 - Sets the sound timer to VX.
       case SOUND_TIMER_TO_VX: {
          sound_timer = V[X];
+
+         log("type FX18 -> sound_timer = V[X]", sound_timer);
          break;
       }
          // 0X001E - Adds VX to I.
-      case ADD_VX_TO_I: {
          // VF is set to 1 when there is a range overflow (I+VX>0xFFF), and to 0 when there isn't.
          // This is an undocumented feature of the CHIP-8 and used by the Spacefight 2091! game.
+      case ADD_VX_TO_I: {
+
          if ((indexReg + V[X]) > OVERFLOW_LIMIT) {
             V[ADDR_F] = COEFF_OF_1;
          }
