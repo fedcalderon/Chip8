@@ -59,24 +59,27 @@ bool Chip8::loadApp(const char *file) {
    cout << "Loading " << file << " ... " << endl;
    // Compute file size
    fseek(pApp, COEFF_OF_0, SEEK_END);
-   long fileSize = ftell(pApp);
+   size_t fileSize = ftell(pApp);
    rewind(pApp);
-   printf("Filesize: %d\n", (int)fileSize);
+   printf("Filesize: %d\n", fileSize);
    // Allocate memory for the application, check for errors
-   char *buff = (char*) malloc(sizeof(char) * fileSize);
+   char *buff = (char*) malloc(sizeof(char) * (fileSize + 1));
    if (buff == NULL) {
       cout << "Error loading app into memory ... " << endl;
       return false;
    }
    // Copy the file into the buffer
-   fread (buff, 1, fileSize, pApp);
+   size_t result = fread (buff, 1, fileSize, pApp);
+   if(result != fileSize){
+      cout << "there seems to be a memory error ... " << endl;
+      return false;
+   }
 
    // Load app into virtual chip-8 memory, check if app size fits into app memory
-   int allocated_space = MEMORY_SIZE - APP_START_ADDR;
+   size_t allocated_space = MEMORY_SIZE - APP_START_ADDR;
    if (fileSize < allocated_space) {
-      for (int i = 0; i < fileSize; i++) {
+      for (size_t i = 0; i < fileSize; i++) {
          memory[APP_START_ADDR + i] = (char) buff[i];
-//         log("", memory[APP_START_ADDR + i]);
       }
    }
    else {

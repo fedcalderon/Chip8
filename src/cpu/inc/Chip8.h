@@ -84,7 +84,7 @@
 #define FILL_V0_TO_VX        0X0065
 
 // Character constants
-#define READ_MODE          "r"
+#define READ_MODE          "rb"
 
 // String constants
 #define TEST_APP           "C:\\Users\\fedcalderon\\workspace\\Chip8\\Apps\\tetris.c8"
