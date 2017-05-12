@@ -144,7 +144,7 @@ bool Chip8::runEmulator() {
       case TYPE_0: {  // 0x0000
          unsigned short opcode_internal_type = opcode & OPCODE_INNER_MASK;
          log("opcode_internal_type", opcode_internal_type);
-         rtn = processType0(opcode_internal_type);
+         rtn = processType0(opcode);
          break;
       }
          // Jumps to address NNN.
@@ -374,14 +374,11 @@ bool Chip8::processType0(unsigned short opcode_internal_type) {
          break;
       }
       case RTN_SUBROUTINE: { // 00EE: Returns from a subroutine.
-         log("return from a subroutine", 0);
+         log("return from a subroutine", opcode_internal_type);
          stack_pointer--;
-         progCounter = stack[stack_pointer + COEFF_OF_2];
-         progCounter += COEFF_OF_2;
+         progCounter = stack[stack_pointer] + COEFF_OF_2;
 
-         log("stack pointer", stack_pointer);
-         log("stack[stack_pointer + 2]", stack[stack_pointer + COEFF_OF_2]);
-         log("Program counter", progCounter);
+         log("returning Program counter", progCounter);
          break;
       }
       default: {
