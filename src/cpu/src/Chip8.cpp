@@ -16,6 +16,10 @@
 #include <stdlib.h>
 #include <time.h>
 #include <iomanip>
+#include <SDL/SDL.h>
+#include <SDL/SDL_image.h>
+#include <SDL/SDL_mixer.h>
+#include <SDL/SDL_ttf.h>
 
 using namespace std;
 
@@ -42,6 +46,32 @@ void Chip8::initializeChip8() {
    for (int i = 0; i < FONTSET_SIZE; i++) {
       memory[FONTSET_SIZE + i] = fontset[i];
    }
+
+   sdlSetup();
+}
+
+void Chip8::sdlSetup(){
+	  Uint8 * keys;
+	//SDL_Event event;
+
+	if(SDL_Init(SDL_INIT_EVERYTHING) < 0){
+		cout << "SDL failed to initialize!" << endl;
+		SDL_Quit();
+	}
+	SDL_WM_SetCaption("FED's CHIP-8 EMULATOR", NULL);
+	SDL_Surface *backbuffer = SDL_SetVideoMode(DISP_HOR, DISP_VER, SCREEN_BPP,
+			SDL_HWSURFACE | SDL_DOUBLEBUF);
+
+	//SDL_Surface *image = SDL_LoadBMP("graphics/joker.png");
+
+//	if(image == NULL){
+//		cout << "image failed to load!" << endl;
+//		SDL_Quit();
+//	}
+//
+//	// Draw image
+//	SDL_BlitSurface(image, NULL, backbuffer, NULL);
+//	SDL_Flip(backbuffer);
 }
 
 /*
@@ -310,9 +340,9 @@ bool Chip8::runEmulator() {
          /*
           * Draws a sprite at coordinate (VX, VY) that has a width of 8 pixels and a height of N pixels.
           * Each row of 8 pixels is read as bit-coded starting from memory location I;
-          * I value doesn’t change after the execution of this instruction.
+          * I value doesnï¿½t change after the execution of this instruction.
           * As described above, VF is set to 1 if any screen pixels are flipped from set to unset
-          * when the sprite is drawn, and to 0 if that doesn’t happen
+          * when the sprite is drawn, and to 0 if that doesnï¿½t happen
           */
       case TYPE_D: { // DXYN
          rtn = processTypeD(opcode);
