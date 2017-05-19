@@ -14,8 +14,8 @@
 // Numeric constants
 #define FONTSET_SIZE         80
 #define MEMORY_SIZE          0x1000   // 4096
-#define DISP_HOR             64
-#define DISP_VER             32
+#define DISP_HOR             64*10
+#define DISP_VER             32*10
 #define NUM_KEYS             16
 #define REG_SIZE             16
 #define STACK_SIZE           16
@@ -83,11 +83,13 @@
 #define V0_TO_VX             0X0055
 #define FILL_V0_TO_VX        0X0065
 
+#define SCREEN_BPP 32
+
 // Character constants
 #define READ_MODE          "rb"
 
 // String constants
-#define TEST_APP           "C:\\Users\\fedcalderon\\workspace\\Chip8\\Apps\\tetris.c8"
+#define TEST_APP           "/home/student/workspace/Chip8-master/Apps/tetris.c8"
 
 class Chip8 {
    public:
@@ -116,6 +118,7 @@ class Chip8 {
        */
       int extractThirdNibble(unsigned short);
       char *readFile(char *fileName);
+      void sdlSetup();
    private:
       /*
        * Fontset definition. Memory position must be at 0x50 (80 decimal)
@@ -138,6 +141,9 @@ class Chip8 {
             0xF0, 0x80, 0xF0, 0x80, 0xF0, // E
             0xF0, 0x80, 0xF0, 0x80, 0x80  // F
       };
+
+
+
       /*
        * The display is 64 x 32 pixels
        */
