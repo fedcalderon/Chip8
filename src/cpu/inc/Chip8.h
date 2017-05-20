@@ -10,18 +10,27 @@
 
 #include <iostream>
 #include <string>
+#include <fstream>
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
+#include <iomanip>
+#include <SDL/SDL.h>
+#include <SDL/SDL_image.h>
+#include <SDL/SDL_mixer.h>
+#include <SDL/SDL_ttf.h>
 
 // Numeric constants
 #define FONTSET_SIZE         80
 #define MEMORY_SIZE          0x1000   // 4096
-#define DISP_HOR             64*10
-#define DISP_VER             32*10
+#define DISP_HOR             640
+#define DISP_VER             320
 #define NUM_KEYS             16
 #define REG_SIZE             16
 #define STACK_SIZE           16
 #define APP_START_ADDR       0x200    // 512
 #define OVERFLOW_LIMIT       0xFFF
-#define CARRY_LIMIT          0xFF
+#define CARRY_LIMIT          0x100
 
 #define COEFF_OF_0           0x0000
 #define COEFF_OF_1           0x0001
@@ -33,8 +42,9 @@
 #define COEFF_OF_7           0x0007
 #define COEFF_OF_8           0x0008
 #define COEFF_OF_E           0x000E
-#define COEFF_OF_10          10
-#define COEFF_OF_100         100
+#define COEFF_OF_10          0x000A
+#define COEFF_OF_20          0x0014
+#define COEFF_OF_100         0x0064
 
 #define ADDR_F               0xF
 
@@ -65,8 +75,12 @@
 #define MASK_00F0            0x00F0
 #define MASK_000F            0x000F
 #define MASK_0F00            0x0F00
+#define MASK_F000            0xF000
+#define MASK_FF              0xFF
+#define MASK_F               0xF
 #define MASK_80              0x80
 #define MASK_1               0x1
+#define MASK_7               0x7
 
 #define CLEAR_SCREEN         0x00E0
 #define RTN_SUBROUTINE       0x00EE
@@ -83,7 +97,7 @@
 #define V0_TO_VX             0X0055
 #define FILL_V0_TO_VX        0X0065
 
-#define SCREEN_BPP 32
+#define SCREEN_BPP           0x20
 
 // Character constants
 #define READ_MODE          "rb"
@@ -101,77 +115,36 @@ class Chip8 {
        * Destructor
        */
       ~Chip8();
-      /*
-       * Load application program
-       */
-      bool loadApp(const char*);
-      /*
-       * Run display method
-       */
-      void runDisplay();
-      /*
-       * Extract second nibble
-       */
-      int extractSecNibble(unsigned short);
-      /*
-       * Extract third nibble
-       */
-      int extractThirdNibble(unsigned short);
-      char *readFile(char *fileName);
-      void sdlSetup();
+
+
+      void start();
+
    private:
-      /*
-       * Fontset definition. Memory position must be at 0x50 (80 decimal)
-       */
-      unsigned char fontset[FONTSET_SIZE] = {
-            0xF0, 0x90, 0x90, 0x90, 0xF0, // 0
-            0x20, 0x60, 0x20, 0x20, 0x70, // 1
-            0xF0, 0x10, 0xF0, 0x80, 0xF0, // 2
-            0xF0, 0x10, 0xF0, 0x10, 0xF0, // 3
-            0x90, 0x90, 0xF0, 0x10, 0x10, // 4
-            0xF0, 0x80, 0xF0, 0x10, 0xF0, // 5
-            0xF0, 0x80, 0xF0, 0x90, 0xF0, // 6
-            0xF0, 0x10, 0x20, 0x40, 0x40, // 7
-            0xF0, 0x90, 0xF0, 0x90, 0xF0, // 8
-            0xF0, 0x90, 0xF0, 0x10, 0xF0, // 9
-            0xF0, 0x90, 0xF0, 0x90, 0x90, // A
-            0xE0, 0x90, 0xE0, 0x90, 0xE0, // B
-            0xF0, 0x80, 0x80, 0x80, 0xF0, // C
-            0xE0, 0x90, 0x90, 0x90, 0xE0, // D
-            0xF0, 0x80, 0xF0, 0x80, 0xF0, // E
-            0xF0, 0x80, 0xF0, 0x80, 0x80  // F
-      };
-
-
 
       /*
        * The display is 64 x 32 pixels
        */
-      unsigned char display[DISP_HOR * DISP_VER] = { 0 };
+      unsigned char display[DISP_HOR * DISP_VER];
       /*
        * Key array has 16 keys, 0 - F
        */
-      unsigned char keys[NUM_KEYS] = { 0 };
-      /*
-       * The need to redraw flag
-       */
-      bool repaint;
+      unsigned char keys[NUM_KEYS];
       /*
        * Memory is 4KB
        * Internal use: 0x0000 - 0x0200
        * Fontset: 0x50
        * Programs: 0x200
        */
-      unsigned char memory[MEMORY_SIZE] = { 0 };
+      unsigned char memory[MEMORY_SIZE];
       /*
        * There are 16 8-bit registers named from V0 - VF.
        * Reg 0xF used for carry, borrow and collision detection.
        */
-      unsigned char V[REG_SIZE] = { 0 };
+      unsigned char V[REG_SIZE];
       /*
        * There are 16 levels of nesting for the subroutine callstack
        */
-      unsigned short stack[STACK_SIZE] = { 0 };
+      unsigned short stack[STACK_SIZE];
       /*
        * Program counter is 16 bit (12 are used).
        * PC points to the current operation.
@@ -188,11 +161,11 @@ class Chip8 {
       /*
        * The delay timer
        */
-      int delay_timer;
+      unsigned char delay_timer;
       /*
        * The sound timer
        */
-      int sound_timer;
+      unsigned char sound_timer;
       /*
        * The Stack Pointer
        */
@@ -200,11 +173,11 @@ class Chip8 {
       /*
        * Initialization method
        */
-      void initializeChip8();
+      void initializeChip8(const char *);
       /*
        * Run method
        */
-      bool runEmulator();
+      void runEmulator();
       /*
        * Print to the console hex values for debugging
        */
@@ -229,7 +202,26 @@ class Chip8 {
        * Process type F opcodes
        */
       bool processTypeF(unsigned short, int);
-
+      /*
+       * Load application program
+       */
+      bool loadApp(const char* fileName);
+      /*
+       * Run display method
+       */
+      void drawSprites();
+      /*
+       * Extract second nibble
+       */
+      int extractSecNibble(unsigned short);
+      /*
+       * Extract third nibble
+       */
+      int extractThirdNibble(unsigned short);
+      char *readFile(const char *fileName);
+      void gameSetup(const char *fileName);
+      void chip8_prec(SDL_Event *);
+      void chip8_timers();
 };
 
 #endif /* CHIP_INC_CHIP8_H_ */
