@@ -103,7 +103,7 @@
 #define READ_MODE          "rb"
 
 // String constants
-#define TEST_APP           "/home/student/workspace/Chip8-master/Apps/tetris.c8"
+#define TEST_APP           "/home/student/workspace/Chip8-master/Apps/invaders.c8"
 
 class Chip8 {
    public:
@@ -124,7 +124,7 @@ class Chip8 {
       /*
        * The display is 64 x 32 pixels
        */
-      unsigned char display[DISP_HOR * DISP_VER];
+      unsigned char display[(DISP_HOR/10) * (DISP_VER/10)] = { 0 };
       /*
        * Key array has 16 keys, 0 - F
        */

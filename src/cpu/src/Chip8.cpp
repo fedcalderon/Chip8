@@ -234,7 +234,7 @@ void Chip8::drawSprites()
 
    SDL_UnlockSurface(surface);
    SDL_Flip(surface);
-   SDL_Delay(5);
+   SDL_Delay(15);
 }
 
 /*
@@ -242,6 +242,7 @@ void Chip8::drawSprites()
  */
 void Chip8::runEmulator()
 {
+   Uint8 * keys;
 
    for (int i = 0; i < COEFF_OF_10; i++)
    {
@@ -340,7 +341,7 @@ void Chip8::runEmulator()
             }
 //            log("X", X);
 //            log("NN", NN);
-//            log("Program counter", progCounter);
+            log("Program counter", progCounter);
             break;
          }
          // Skips the next instruction if VX doesn't equal NN. (Usually the next instruction is a jump to skip a code block)
@@ -358,7 +359,7 @@ void Chip8::runEmulator()
             }
 //            log("X", X);
 //            log("NN", NN);
-//            log("Program counter", progCounter);
+            log("Program counter", progCounter);
             break;
          }
          // Skips the next instruction if VX equals VY. (Usually the next instruction is a jump to skip a code block)
@@ -376,7 +377,7 @@ void Chip8::runEmulator()
             }
 //            log("X", X);
 //            log("Y", Y);
-//            log("Program counter", progCounter);
+            log("Program counter", progCounter);
             break;
          }
             // 6XNN - Sets VX to NN.
@@ -389,7 +390,7 @@ void Chip8::runEmulator()
 
 //            log("X", X);
 //            log("NN", NN);
-//            log("Program counter", progCounter);
+            log("Program counter", progCounter);
             break;
          }
             // 7XNN - Adds NN to VX.
@@ -403,7 +404,7 @@ void Chip8::runEmulator()
 //            log("X", X);
 //            log("NN", NN);
 //            log("V[X]", V[X]);
-//            log("Program counter", progCounter);
+            log("Program counter", progCounter);
             break;
          }
             // Math operations
@@ -420,24 +421,28 @@ void Chip8::runEmulator()
                case COEFF_OF_0:
                {
                   V[X] = V[Y];
+                  progCounter += COEFF_OF_2;
                   break;
                }
                // 8XY1: Sets VX to VX or VY. (Bitwise OR operation) VF is reset to 0.
                case COEFF_OF_1:
                {
                   V[X] = V[X] | V[Y];
+                  progCounter += COEFF_OF_2;
                   break;
                }
                // 8XY2: Sets VX to VX and VY. (Bitwise AND operation) VF is reset to 0.
                case COEFF_OF_2:
                {
                   V[X] = V[X] & V[Y];
+                  progCounter += COEFF_OF_2;
                   break;
                }
                // 8XY3: Sets VX to VX xor VY. VF is reset to 0.
                case COEFF_OF_3:
                {
                   V[X] = V[X] ^ V[Y];
+                  progCounter += COEFF_OF_2;
                   break;
                }
                // 8XY4: Adds VY to VX. VF is set to 1 when there's a carry, and to 0 when there isn't.
@@ -453,6 +458,7 @@ void Chip8::runEmulator()
                      V[ADDR_F] = COEFF_OF_1; // no carry
                   }
                   V[X] += V[Y];
+                  progCounter += COEFF_OF_2;
                   break;
                }
                // 8XY5: VY is subtracted from VX. VF is set to 0 when there's a borrow, and 1 when there isn't.
@@ -468,6 +474,7 @@ void Chip8::runEmulator()
                      V[ADDR_F] &= COEFF_OF_0; // borrow
                   }
                   V[X] -= V[Y];
+                  progCounter += COEFF_OF_2;
                   break;
                }
                // 8XY6: Shifts VX right by one. VF is set to the value of the least significant bit of VX before the shift.
@@ -475,6 +482,7 @@ void Chip8::runEmulator()
                {
                   V[ADDR_F] = V[X] & MASK_7;
                   V[X] = V[X] >> COEFF_OF_1;
+                  progCounter += COEFF_OF_2;
                   break;
                }
                // 8XY7: Sets VX to VY minus VX. VF is set to 0 when there's a borrow, and 1 when there isn't.
@@ -490,6 +498,7 @@ void Chip8::runEmulator()
                      V[ADDR_F] &= COEFF_OF_0; // borrow
                   }
                   V[X] = V[Y] - V[X];
+                  progCounter += COEFF_OF_2;
                   break;
                }
                // 8XYE: Shifts VX left by one. VF is set to the value of the most significant bit of VX before the shift.
@@ -497,19 +506,14 @@ void Chip8::runEmulator()
                {
                   V[ADDR_F] = V[X] >> MASK_7;
                   V[X] = V[X] << COEFF_OF_1;
+                  progCounter += COEFF_OF_2;
                   break;
                }
                default:
                {
-         //         log("value is invalid!", oc);
                   break;
                }
             }
-
-            // Program counter is always incremented by 2 bytes after each opcode execution
-            progCounter += COEFF_OF_2;
-
-
             break;
          }
          // Skips the next instruction if VX doesn't equal VY. (Usually the next instruction is a jump to skip a code block)
@@ -525,12 +529,6 @@ void Chip8::runEmulator()
             {
                progCounter += COEFF_OF_2;
             }
-
-            log("X", X);
-            log("Y", Y);
-            log("V[X]", V[X]);
-            log("V[Y]", V[Y]);
-            log("Program counter", progCounter);
             break;
          }
          // ANNN - Sets I to the address NNN.
@@ -580,14 +578,14 @@ void Chip8::runEmulator()
                // Inner loop controls x-coordinate from 0 to 7, 8 pixels wide
                for (int xCoord = 0; xCoord < COEFF_OF_8; xCoord++)
                {
-                  unsigned short shifting_mask = 0b10000000 >> xCoord;
-                  int pixel = line & shifting_mask;
-                  if (pixel == 1)
+//                  unsigned short shifting_mask = 0b10000000 >> xCoord;
+//                  int pixel = line & shifting_mask;
+                  if (line & (MASK_80 >> xCoord))
                   {
                      int totalDrawX = (VX + xCoord);// % DISP_HOR;
                      int totalDrawY = (VY + yCoord);// % DISP_VER;
                      int index = (totalDrawY * 64) + totalDrawX;
-                     if (display[index] == 1)
+                     if (display[index])
                      {
                         V[ADDR_F] = COEFF_OF_1;
                      }
@@ -607,7 +605,6 @@ void Chip8::runEmulator()
             log("last_byte", oc);
             int X = extractSecNibble(opcode);
 
-            Uint8 * keys;
             switch (oc)
             {
                // Skips the next instruction if the key stored in VX is pressed.
@@ -659,7 +656,6 @@ void Chip8::runEmulator()
             unsigned short oc = opcode & MASK_00FF;
             int X = extractSecNibble(opcode);
 
-            Uint8 * keys;
             switch (oc)
             {
                // 0xFX07 - Sets VX to the value of the delay timer.
