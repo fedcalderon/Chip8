@@ -44,6 +44,7 @@
 #define COEFF_OF_E           0x000E
 #define COEFF_OF_10          0x000A
 #define COEFF_OF_20          0x0014
+#define COEFF_OF_64          0x0040
 #define COEFF_OF_100         0x0064
 
 #define ADDR_F               0xF
@@ -100,10 +101,13 @@
 #define SCREEN_BPP           0x20
 
 // Character constants
-#define READ_MODE          "rb"
+#define READ_MODE            "rb"
 
 // String constants
-#define TEST_APP           "/home/student/workspace/Chip8-master/Apps/invaders.c8"
+#define PATH                 "/home/student/workspace/Chip8-master/"
+#define TEST_APP             "/home/student/workspace/Chip8-master/Apps/pong2.c8"
+#define SOUND_PATH           "/home/student/workspace/Chip8-master/beep.wav"
+
 
 class Chip8 {
    public:
@@ -115,7 +119,6 @@ class Chip8 {
        * Destructor
        */
       ~Chip8();
-
 
       void start();
 
@@ -173,11 +176,11 @@ class Chip8 {
       /*
        * Initialization method
        */
-      void initializeChip8(const char *);
+      void initialize(const char *);
       /*
        * Run method
        */
-      void runEmulator();
+      void runDisassembler();
       /*
        * Print to the console hex values for debugging
        */
@@ -205,7 +208,7 @@ class Chip8 {
       /*
        * Load application program
        */
-      bool loadApp(const char* fileName);
+      void loadApp(const char* fileName);
       /*
        * Run display method
        */
@@ -213,15 +216,22 @@ class Chip8 {
       /*
        * Extract second nibble
        */
-      int extractSecNibble(unsigned short);
+      int extractSecondNibble(unsigned short);
       /*
        * Extract third nibble
        */
       int extractThirdNibble(unsigned short);
       char *readFile(const char *fileName);
       void gameSetup(const char *fileName);
-      void chip8_prec(SDL_Event *);
-      void chip8_timers();
+      void scanKeyboard(SDL_Event *);
+      void configureTimers();
+      void soundBeep();
+      void my_audio_callback(Uint8 *, int);
+      void processType0();
+      void processType8(unsigned short X, unsigned short Y);
+      void processTypeD(unsigned short X, unsigned short Y);
+      void processTypeE(unsigned short ETypes, unsigned short X, Uint8* keys);
+      void processTypeF(unsigned short FTypes, unsigned short X, Uint8* keys);
 };
 
 #endif /* CHIP_INC_CHIP8_H_ */
