@@ -124,6 +124,7 @@ class Chip8 {
 
    private:
 
+      int speed;
       /*
        * The display is 64 x 32 pixels
        */

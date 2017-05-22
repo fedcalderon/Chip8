@@ -76,31 +76,48 @@ void Chip8::start()
    {
       case COEFF_OF_1:
       {
+         printf("\n**********************************\n");
+         printf("Let's play TETRIS!\nKey map:\n4. Rotate\n5. Left\n6. Right\n");
+         printf("**********************************\n\n");
+         speed = 5;
          initialize("tetris.c8");
          break;
       }
       case COEFF_OF_2:
       {
+         printf("\n**********************************\n");
+         printf("Let's play INVADERS!\nKey map:\n5. Fire\n4. Left\n6. Right\n");
+         printf("**********************************\n\n");
+         speed = 10;
          initialize("invaders.c8");
          break;
       }
       case COEFF_OF_3:
       {
+         printf("\n**********************************\n");
+         printf("Let's play PONG!\nKey map:\n1. UP\n4. DOWN\n");
+         printf("**********************************\n\n");
+         speed = 10;
          initialize("pong2.c8");
          break;
       }
       case COEFF_OF_4:
       {
-         exit(1);
+         printf("\n**********************************\n");
+         printf("  Thanks for playing! See ya!\n");
+         printf("**********************************\n\n");
          break;
       }
       default:
       {
-         printf("Wrong selection! See ya!");
-         exit(1);
+         printf("\n**********************************\n");
+         printf("  Wrong selection! Try again!\n");
+         printf("**********************************\n\n");
          break;
       }
    }
+
+   exit(1);
 }
 
 /*
@@ -139,7 +156,7 @@ void Chip8::initialize(const char * fileName)
       SDL_Quit();
    }
    // Setup video window
-   SDL_WM_SetCaption("CHIP-8 EMULATOR | Keys: ESC to exit, P/U to pause/unpause, C to reset", NULL);
+   SDL_WM_SetCaption("CHIP-8 EMULATOR | Keys: ESC (exit), P (pause), U (unpause), C (reset), R (restart)", NULL);
    SDL_SetVideoMode(DISP_HOR, DISP_VER, SCREEN_BPP, SDL_HWSURFACE | SDL_DOUBLEBUF);
    // Setup SDL event
    SDL_Event event;
@@ -231,7 +248,11 @@ void Chip8::loadApp(const char *file)
    fseek(pApp, COEFF_OF_0, SEEK_END);
    size_t fileSize = ftell(pApp);
    rewind(pApp);
-   printf("File size: %d\n", (int)fileSize);
+
+   /********************************  For debugging, uncomment ********************************************/
+//   printf("File size: %d\n", (int)fileSize);
+
+
    // Allocate memory for the application, check for errors
    char *buff = (char*) malloc(sizeof(char) * (fileSize + 1));
    if (buff == NULL)
@@ -581,7 +602,7 @@ void Chip8::runDisassembler()
    Uint8 * keys = NULL;
 
    // The limit tunes how fast the game moves. The lower the number, the slower it runs.
-   for (int i = COEFF_OF_0; i < COEFF_OF_10; i++)
+   for (int i = COEFF_OF_0; i < speed; i++)
    {
 
       /*
@@ -596,7 +617,9 @@ void Chip8::runDisassembler()
       unsigned short second_byte = memory[progCounter + COEFF_OF_1];
       opcode = first_byte | second_byte;
 
-      printf ("Opcode: %04X | PC: %04X | I:%02X | SP:%02X\n", opcode, progCounter, indexReg, stack_pointer);
+      /********************************  For debugging, uncomment ********************************************/
+//      printf ("Opcode: %04X | PC: %04X | I:%02X | SP:%02X\n", opcode, progCounter, indexReg, stack_pointer);
+      /*******************************************************************************************************/
 
       /*
        * Decode opcode.
